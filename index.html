@@ -361,12 +361,12 @@ const LEVELS = [
   // урок раздачи (v0.9): старт — готовая пара под руку и три одинокие половинки; раздача каждый ход (deal: 'each', как в v0.7) и только пары к одиноким,
   // «в ряд» с ними (near): почти каждый ход есть стыковка в один свайп, рука нужна только на первом ходу. audit/lesson4.mjs — замер вариантов
   { n: 4, layout: ['. . . . .', 'h . . . H', '. . . # .', '. . c . .', '. s . . H'], queue: ['h', 'c', 's', 'h', 'c'], colors: 3, every: 1, help: 1, want: 1, near: true, deal: 'each', lesson: true },
-  { n: 5,  ...B, ...SOFT, colors: 3, pairs: 3, stones: 1, figs: 13, osz: 1, seed: 0 },
-  { n: 6,  ...B, ...SOFT, colors: 3, pairs: 4, stones: 1, figs: 14, osz: 2, seed: 2 },
-  { n: 7,  ...B, ...SOFT, colors: 3, pairs: 4, stones: 2, figs: 15, osz: 2, seed: 16 },
-  { n: 8,  ...B, ...SOFT, colors: 4, pairs: 4, stones: 1, figs: 16, osz: 2, seed: 9 },
-  { n: 9,  ...B, ...SOFT, colors: 4, pairs: 4, stones: 1, figs: 17, osz: 2, seed: 11 },
-  { n: 10, ...B, ...SOFT, colors: 3, pairs: 4, stones: 1, figs: 18, osz: 3, seed: 0 },
+  { n: 5,  ...B, ...SOFT, colors: 3, pairs: 3, stones: 1, figs: 17, osz: 1, seed: 0 },
+  { n: 6,  ...B, ...SOFT, colors: 3, pairs: 4, stones: 1, figs: 18, osz: 2, seed: 2 },
+  { n: 7,  ...B, ...SOFT, colors: 3, pairs: 4, stones: 2, figs: 19, osz: 2, seed: 16 },
+  { n: 8,  ...B, ...SOFT, colors: 4, pairs: 4, stones: 1, figs: 20, osz: 2, seed: 9 },
+  { n: 9,  ...B, ...SOFT, colors: 4, pairs: 4, stones: 1, figs: 22, osz: 2, seed: 11 },
+  { n: 10, ...B, ...SOFT, colors: 3, pairs: 4, stones: 1, figs: 23, osz: 3, seed: 0 },
   // --- A. верх/низ ---
   { n: 11, layout: ['. . h^ . .', '. . . . .', 's . . . S', '. . . . .', '. . H^ . .'], queue: ['h', 's'], every: 0, lesson: true },
   { n: 12, ...EASY,  vert: 0.5, seed: 1 },
@@ -395,7 +395,7 @@ const LEVELS = [
   { n: 31, layout: ['. c . s .', '. . . . .', '. . . . .', 'S* . C . .'], queue: ['c', 's'], every: 0, lesson: true },
   { n: 32, ...EASY,  chains: 1, seed: 11 },
   { n: 33, ...MID,   chains: 2, seed: 2 },
-  { n: 34, ...TOUGH, chains: 2, seed: 4 },
+  { n: 34, ...TOUGH, chains: 2, seed: 14 },   // 17.11: раздача больше не уходит из клетки призрака — переподбор (был 4)
   { n: 35, ...HARD,  chains: 2, rainbow: 0.12, seed: 7 },
   // --- F. таймер ---
   { n: 36, layout: ['h6 . . . .', '. . . . .', '. . . H .', '# . . . .', '. s . . S'], queue: ['h', 's'], every: 0, lesson: true },
@@ -673,6 +673,35 @@ function dockInOne(s){
   }
   return false;
 }
+let NEAR_DEPTH = 0;                                  // > 0 — идёт проверка ходов внутри правила «под пару»: вложенные applyMove его не применяют
+// Половинка «для заказа» (17.11): какую половинку нужного заказам цвета и в какую клетку положить, чтобы появилась стыковка под заказ одним свайпом.
+// Сначала — места, где пару соберёт сам игрок (не вплотную), ближе к from; иначе — вплотную (стыкуется сама, «Подарок!»). null — некуда.
+function orderHalf(s, from){
+  const W = wantedColors(s), sides = s.vert ? 4 : 2, fx = from % s.w, fy = (from - fx) / s.w, nr = s.near; let best = null;
+  s.near = false;                                   // проверка ходов внутри (orderMoves → applyMove) это правило не запускает
+  for (let col = 0; col < 5; col++){ if (!W[col]) continue;
+    for (let sd = 0; sd < sides; sd++){ const code = pieceCode(col, sd);
+      for (let i = 0; i < s.grid.length; i++){ if (s.grid[i] !== 0) continue;
+        s.grid[i] = code; const touch = dockPartner(s.grid, s.w, s.h, i, code) >= 0, ok = touch || orderMoves(s).length > 0; s.grid[i] = 0;
+        if (!ok) continue;
+        const x = i % s.w, sc = (touch ? 100 : 0) + Math.abs(x - fx) + Math.abs((i - x) / s.w - fy);
+        if (!best || sc < best.sc) best = { code, cell: i, sc };
+      } } }
+  s.near = nr;
+  return best && { code: best.code, cell: best.cell };
+}
+// Пара нужного заказу цвета целиком: левая и правая половинки в одном ряду, между ними пусто и есть зазор — один свайп стыкует. Ближе к from.
+function orderPair(s, from){
+  const W = wantedColors(s), fx = from % s.w, fy = (from - fx) / s.w; let best = null;
+  const col = W.findIndex(Boolean); if (col < 0) return [];
+  for (let y = 0; y < s.h; y++) for (let a = 0; a < s.w; a++) for (let b = a + 2; b < s.w; b++){
+    let ok = true; for (let x = a; x <= b; x++) if (s.grid[y * s.w + x] !== 0){ ok = false; break; }
+    if (!ok) continue;
+    const sc = Math.abs((a + b) / 2 - fx) + Math.abs(y - fy) + (b - a) * 0.1;
+    if (!best || sc < best.sc) best = { sc, l: y * s.w + a, r: y * s.w + b };
+  }
+  return best ? [{ code: pieceCode(col, 0), cell: best.l }, { code: pieceCode(col, 1), cell: best.r }] : [];
+}
 // Пара в ряд: в той же строке (левая/правая) или столбце (верх/низ) с нужной стороны стоит пара, между ними пусто и есть зазор — свайп любой из двух стыкует.
 function inLine(s, i, code){
   const w = s.w, x = i % w, y = (i - x) / w, sd = sideOf(code), dx = sd === 0 ? 1 : sd === 1 ? -1 : 0, dy = sd === 2 ? 1 : sd === 3 ? -1 : 0;
@@ -702,24 +731,16 @@ function spawnOverflows(s, cell, code){
   return col !== RAINBOW && !wantedColors(s)[col];
 }
 // Падение раздачи: в клетку искры, а если её заняли — в ближайшую пустую. Может сразу состыковаться.
-// Раздача не проигрывает уровень за игрока: если её стыковка переполнила бы лоток, она падает в другую пустую клетку.
+// Раздача не проигрывает уровень за игрока: если её стыковка переполнила бы лоток, она встаёт в свою клетку, но сама не стыкуется (17.11; раньше падала в другую).
 function spawn(s, ev, by){
-  if (s.near && !lineFits(s, s.next.code)) planNext(s);      // урок: ход прижал пару к «не той» стене — раздача выбирается заново, под тех, к кому можно встать в ряд
+  // 17.11 (баг Андрея «временные фигуры меняют свой грид на соседний»): показанная клетка призрака не меняется, пока её не заняли.
+  // Раньше при падении раздача перепланировалась (near: «пара не в ряд») и сдвигалась (near-подстройка, переполнение лотка) — без занятия клетки.
   const want = s.next.cell, code = s.next.code;
-  let cell = want >= 0 && s.grid[want] === 0 ? want : nearestEmpty(s.grid, s.w, Math.max(0, want));
+  let cell = want >= 0 && s.grid[want] === 0 ? want : nearestEmpty(s.grid, s.w, Math.max(0, want));   // заняли — в ближайшую пустую (вид показывает переезд)
   if (cell < 0) return null;
-  if (s.near){ s.grid[cell] = code; const ok = inLine(s, cell, code); s.grid[cell] = 0; if (!ok) cell = nearCell(s, code, cell); }   // урок: пару подвинули — половинка встаёт туда, где снова стыкуется одним свайпом
-  if (spawnOverflows(s, cell, code)){
-    const fx = cell % s.w, fy = (cell - fx) / s.w; let best = -1, bd = Infinity;
-    for (let i = 0; i < s.grid.length; i++){
-      if (s.grid[i] !== 0 || spawnOverflows(s, i, code)) continue;
-      const x = i % s.w, dd = Math.abs(x - fx) + Math.abs((i - x) / s.w - fy);
-      if (dd < bd){ bd = dd; best = i; }
-    }
-    if (best >= 0) cell = best;
-  }
+  const over = spawnOverflows(s, cell, code);        // стыковка переполнила бы лоток — половинка встаёт в свою клетку, но сама не стыкуется
   s.grid[cell] = code;
-  const partner = dockPartner(s.grid, s.w, s.h, cell, code), partnerCode = partner >= 0 ? s.grid[partner] : 0;
+  const partner = over ? -1 : dockPartner(s.grid, s.w, s.h, cell, code), partnerCode = partner >= 0 ? s.grid[partner] : 0;
   let color = -1, target = null;
   if (partner >= 0){ const d = dock(s, cell, partner, ev, by || 'spawn'); color = d.color; target = d.target; }
   s.k++;
@@ -847,6 +868,19 @@ function applyMove(s, m){
     }
   }
   last.extra = topUp(n, last.ev);
+  // «Под пару» (урок 4, вводные 5–10; 17.11), в конце уровня: если после раздачи на поле нет ни одной стыковки под заказ (например, поле опустело, а последней
+  // фигуры нет вовсе), в тот же ход приходит вторая половинка — пара к первой, в ряд с ней: собирается одним свайпом, без пустых ходов в конце.
+  if (n.near && last.spawn && NEAR_DEPTH === 0 && !isWin(n) && !isLose(n) && !n.trayOver && ordersLeft(n) && n.grid.indexOf(0) >= 0){
+    NEAR_DEPTH++; let has; try { has = orderMoves(n).length > 0; } finally { NEAR_DEPTH--; }   // проверка ходов внутри это правило не запускает
+    n.dry = has ? 0 : (s.dry || 0) + 1;
+  }
+  if (n.near && last.spawn && NEAR_DEPTH === 0 && n.dry && (n.oi >= n.queue.length || n.dry >= 2)){   // в конце уровня (очередь исчерпана) или второй ход подряд без стыковки под заказ
+    n.dry = 0; NEAR_DEPTH++;
+    const pick = orderHalf(n, last.spawn.cell), picks = pick ? [pick] : orderPair(n, last.spawn.cell);   // одной половинкой не выходит (одинокие у стен) — пара целиком, в ряд
+    const nr = n.near; n.near = false;
+    for (const q of picks){ n.next = q; const sp = spawn(n, last.ev, 'extra' + last.extra.length); if (sp) last.extra.push(sp); }
+    n.near = nr; NEAR_DEPTH--;
+  }
   n.last = last;
   return n;
 }
@@ -1380,7 +1414,7 @@ function startLevel(li){
   CFG.DEAL = RC.deal;                                               // раздача: умолчание ядра или deal_mode из удалённого конфига
     G.s = createState(li); G.s0 = G.s; G.hist = []; G.par = null;
   if (G.screen === 'settings') setPaused('settings', false);
-  G.ending = 0; G.drag = null; G.winT = 0; G.revived = false; G.ordX = {}; G.leaving = []; G.bestCombo = 0; G.traySweep = null; TUT.q = []; TUT.due = []; if (TUT.cur){ TUT.cur = null; setPaused('tut', false); if (TUT.cv) TUT.cv.style.display = 'none'; } tutQueue(TUT_START[li] || []); G.wantPrev = []; G.wantT = []; G.view = null; snapView(); clearFx(true); G.levelT0 = clock(); G.lastInputT = G.levelT0; G.hintFor = null;
+  G.ending = 0; G.drag = null; G.winT = 0; G.revived = false; G.ordX = {}; G.leaving = []; G.queued = null; G.bestCombo = 0; G.traySweep = null; TUT.q = []; TUT.due = []; if (TUT.cur){ TUT.cur = null; setPaused('tut', false); if (TUT.cv) TUT.cv.style.display = 'none'; } tutQueue(TUT_START[li] || []); G.wantPrev = []; G.wantT = []; G.view = null; snapView(); clearFx(true); G.levelT0 = clock(); G.lastInputT = G.levelT0; G.hintFor = null;
   Audio.intro(); log('fx.start', 'intro'); G.fxOpen.push({ name: 'intro', t1: G.levelT0 + CFG.INTRO_MS + CFG.INTRO_STEP * 12 });
   G.cursor = G.s.grid.findIndex(c => c > 0);
   const spec = levelSpec(li);
@@ -1401,6 +1435,7 @@ function hud(){
 // --- ход в оболочке: ядро считает, оболочка раскладывает эффекты по абсолютному времени ---
 function doMove(m){
   if (!G.s || G.screen !== 'game' || G.paused || G.ending || isWin(G.s) || isLose(G.s)) return false;
+  if (G.drops.some(D => clock() < D.t1)){ G.queued = m; log('input', 'queued', 'cell=' + (m >> 2)); return true; }   // 17.11: новая половинка ещё падает — ход подождёт, пока она встанет (раньше ход обрывал падение)
   const i = m >> 2, d = m & 3;
   if (G.s.grid[i] <= 0) return false;
   const next = applyMove(G.s, m);
@@ -1468,9 +1503,9 @@ function animateSpawns(L, T, t0, served){
   const ts = G.timeScale, list = (L.spawn ? [{ S: L.spawn, by: 'spawn' }] : []).concat((L.extra || []).map((S, q) => ({ S, by: 'extra' + q })));
   let t = t0, tEnd = t0;
   for (const { S, by } of list){
-    const claw = ROYAL && CLAW_ON, travel = claw && S.planned >= 0 && S.planned !== S.cell ? CLAW.move : 0;   // royal: клетку заняли — захват везёт груз к новой
-    const d1 = t + (claw ? travel + 40 + CLAW.fall + CLAW.land : CFG.SPAWN_MS) / ts, g = geo();
-    G.drops.push({ code: S.code, cell: S.cell, t0: t, t1: d1, planned: S.planned, travel });
+    const moved = S.planned >= 0 && S.planned !== S.cell, claw = ROYAL && CLAW_ON, travel = claw && moved ? CLAW.move : 0, rel = !claw && moved ? GHOST_MOVE_MS : 0;   // клетку призрака заняли — он видимо переезжает, потом падает   // royal: клетку заняли — захват везёт груз к новой
+    const d1 = t + (claw ? travel + 40 + CLAW.fall + CLAW.land : rel + CFG.SPAWN_MS) / ts, g = geo();
+    G.drops.push({ code: S.code, cell: S.cell, t0: t, t1: d1, planned: S.planned, travel, rel });
     if (claw) Audio.clack((t + travel / ts - T) / 1000);
     fxOpen('drop', d1, 'cell=' + S.cell + (S.cell !== S.planned ? ' moved' : '') + (by !== 'spawn' ? ' auto' : ''));
     Audio.plop((t - T) / 1000);
@@ -2280,6 +2315,16 @@ function drawClawDrop(c, g, D, now){
   } else { const v = Math.min(1, (r - 40 / ts - CLAW.fall / ts) / (CLAW.land / ts)), q = Math.sin(v * Math.PI) * 0.14;   // посадка: плитка проявляется с отскоком
     drawPiece(c, D.code, p.x, p.y, cs, Math.min(1, 0.5 + v * 2), 1, 1 + q, 1 - q); }
 }
+// Призрак переезжает видимо (17.11): та же раздача (s.k), а клетка сменилась — значит, её заняли; едет из старой клетки в новую.
+const GHOST_MOVE_MS = 220;
+function ghostXY(s, g, now){
+  const q = cellXY(s.next.cell, g), P = G.ghostPos;
+  if (!P || P.k !== s.k || P.lvl !== G.levelT0){ G.ghostPos = { k: s.k, lvl: G.levelT0, cell: s.next.cell, x: q.x, y: q.y, mv: null }; return q; }
+  if (P.cell !== s.next.cell){ P.mv = { fx: P.x, fy: P.y, t0: now }; P.cell = s.next.cell; log('fx.start', 'ghost.move', 'cell=' + s.next.cell); }
+  let x = q.x, y = q.y;
+  if (P.mv){ const u = Math.min(1, (now - P.mv.t0) / (GHOST_MOVE_MS / G.timeScale)), e = easeIO(u); x = P.mv.fx + (q.x - P.mv.fx) * e; y = P.mv.fy + (q.y - P.mv.fy) * e - Math.sin(u * Math.PI) * g.cell * 0.2; if (u >= 1) P.mv = null; }
+  P.x = x; P.y = y; return { x, y };
+}
 function drawSpark(c, x, y, s, code, now){
   const k = 0.5 + 0.5 * Math.sin(now / 220);
   c.save();
@@ -2782,7 +2827,7 @@ function render(){
   }
   for (let i = 0; i < s.grid.length; i++){ const p = cellXY(i, g); if (!base){ ctx.fillStyle = P.slot; rr(ctx, p.x + cs * 0.05, p.y + cs * 0.05, cs * 0.9, cs * 0.9, cs * 0.18); ctx.fill(); } if (s.floor[i] === HONEY) drawHoney(ctx, p.x - (s.grid[i] > 0 ? cs * 0.06 : 0), p.y - (s.grid[i] > 0 ? cs * 0.04 : 0), cs * (s.grid[i] > 0 ? 1.12 : 1)); }
   // искра следующей раздачи
-  if (s.every > 0 && s.next && s.next.cell >= 0 && !isWin(s) && !G.drops.some(D => now < D.t1)){ const p = cellXY(s.next.cell, g); if (!(ROYAL && CLAW_ON && ART.clawClosed)) drawSpark(ctx, p.x, p.y, cs, s.next.code, now); }
+  if (s.every > 0 && s.next && s.next.cell >= 0 && !isWin(s) && !G.drops.some(D => now < D.t1)){ const p = ghostXY(s, g, now); if (!(ROYAL && CLAW_ON && ART.clawClosed)) drawSpark(ctx, p.x, p.y, cs, s.next.code, now); }
   // превью свайпа: честный расчёт ядра — куда доедет и будет ли щёлк
   let ghost = null;
   if (G.drag && G.drag.dir >= 0){
@@ -2913,6 +2958,10 @@ function render(){
     // призрак в клетке становится плиткой: до начала — тот же призрак, затем плитка проявляется с лёгким отскоком
     const p = cellXY(D.cell, g);
     if (ROYAL && CLAW_ON && ART.clawClosed){ drawClawDrop(ctx, g, D, now); continue; }   // royal: сброс из захвата
+    if (D.rel){ const q = cellXY(D.planned, g), tr = D.t0 + D.rel / G.timeScale;   // переезд призрака из занятой клетки (видно, куда он делся)
+      if (now < tr){ const u = Math.max(0, Math.min(1, (now - D.t0) / (D.rel / G.timeScale))), e = easeIO(u); drawSpark(ctx, q.x + (p.x - q.x) * e, q.y + (p.y - q.y) * e - Math.sin(u * Math.PI) * cs * 0.2, cs, D.code, now); continue; }
+      const u = (now - tr) / (D.t1 - tr), w = Math.min(1, u / 0.7), v = backOut(w), qq = u < 0.7 ? 0 : Math.sin((u - 0.7) / 0.3 * Math.PI) * 0.12;
+      drawPiece(ctx, D.code, p.x, p.y - (1 - w) * cs * 0.3, cs, Math.min(1, 0.45 + w), 0.6 + 0.4 * v, 1 + qq, 1 - qq); continue; }
     if (now < D.t0) drawSpark(ctx, p.x, p.y, cs, D.code, now);
     else {
       const u = (now - D.t0) / (D.t1 - D.t0), w = Math.min(1, u / 0.7), v = backOut(w), q = u < 0.7 ? 0 : Math.sin((u - 0.7) / 0.3 * Math.PI) * 0.12;
@@ -2987,7 +3036,9 @@ function render(){
 // --- цикл: rAF + watchdog setInterval; безопасно, потому что время абсолютное (§4). Кадр под try/catch. ---
 let lastFrame = 0, frameErrors = 0;
 function safeRender(){ try { render(); } catch (e) { frameErrors++; if (frameErrors < 5) console.error(e); log('event', 'frame.error', e && e.message); } }
-function frame(){ lastFrame = performance.now(); if (TUT_ON){ try { tutTick(); drawSpot(); } catch (e) { log('event', 'frame.error', 'tut ' + (e && e.message)); } } if (!G.paused){ if (!(ROYAL && (G.screen === 'fireworks' || G.screen === 'win'))) safeRender(); try { drawFx(); } catch (e) {} if (ROYAL) try { drawSky(); } catch (e) { log('event', 'frame.error', 'sky ' + (e && e.message)); } } requestAnimationFrame(frame); }
+function frame(){ lastFrame = performance.now();
+  if (G.queued != null && !G.paused && G.screen === 'game' && !G.drops.some(D => clock() < D.t1)){ const m = G.queued; G.queued = null; doMove(m); }   // отложенный ход — сразу, как кусок встал
+  if (TUT_ON){ try { tutTick(); drawSpot(); } catch (e) { log('event', 'frame.error', 'tut ' + (e && e.message)); } } if (!G.paused){ if (!(ROYAL && (G.screen === 'fireworks' || G.screen === 'win'))) safeRender(); try { drawFx(); } catch (e) {} if (ROYAL) try { drawSky(); } catch (e) { log('event', 'frame.error', 'sky ' + (e && e.message)); } } requestAnimationFrame(frame); }
 setInterval(() => { if (performance.now() - lastFrame > 120 && !G.paused) safeRender(); }, 40);
 
 // --- дебаг-хук (§6): состояние, любой экран, ходы, прогон времени, автоигра. Только DEV: в сборке для стора вырезан. ---
