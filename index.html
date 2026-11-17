@@ -1699,7 +1699,8 @@ function toVirtual(e){ const r = cv.getBoundingClientRect(); return { x: (e.clie
 const ORD_H = 56, ORD_GAP = 8, CHIP_R = 20, CHIP_STEP = 47, CARD_PAD = 16;   // карточка заказа облегает свои фишки: высота, зазор, радиус и шаг фишек, поля
 const NEXT_H = 36, NEXT_STEP = 18, NEXT_PAD = 14;                    // маленькая карточка «следующий заказ»: высота, шаг фигур, поля
 const CRATE_CARD_W = 92;                                              // карточка-цель «ящики»: фишка-ящик и счётчик «0/3»
-const BAND_PAD = 10, TRAY_GAP = 8, TRAY_H = 42, TRAY_S = 30, TRAY_STEP = 37, TRAY_PAD = 8, TRAY_CNT = 46;   // лоток в панели цели: отступ от карточек, высота, место, шаг, поля, место под счётчик «2/4»
+const RT = SKIN === 'royal';                                          // royal (17.11, мокап лотка C): лоток — тёмно-синяя капсула с крупными лунками, без счётчика
+const BAND_PAD = 10, TRAY_GAP = 8, TRAY_H = RT ? 54 : 42, TRAY_S = RT ? 42 : 30, TRAY_STEP = RT ? 50 : 37, TRAY_PAD = RT ? 7 : 8, TRAY_CNT = RT ? 0 : 46;   // лоток в панели цели: отступ от карточек, высота, место, шаг, поля, место под счётчик «2/4»
 const PANEL_H = BAND_PAD + ORD_H + TRAY_GAP + TRAY_H + BAND_PAD;     // панель цели целиком
 const TOP_GAP = 30, BOTTOM_PAD = 18;                                  // зазор между панелью цели и полем (разнесены); поле под рамкой
 function geo(){
@@ -2221,20 +2222,26 @@ function drawTray(c, g, now, kind){
   const s = G.s, V = G.view, n = V.tray.length, r = trayRect(g);
   const flash = G.trayFlash && now >= G.trayFlash && now < G.trayFlash + 700, full = n >= s.cap, hot = full || flash || kind === 'over', warn = !hot && n === s.cap - 1;
   const beat = 0.5 + 0.5 * Math.sin(now / (kind === 'over' || flash ? 60 : hot ? 170 : 230));
-  if (ROYAL){                                       // royal v2: светлый утопленный паз
-    c.fillStyle = '#e6d2aa'; rr(c, r.x, r.y, r.w, r.h, r.h / 2); c.fill();
-    c.fillStyle = '#f3e6cb'; rr(c, r.x, r.y + 3, r.w, r.h - 3, r.h / 2); c.fill();
+  if (ROYAL){                                       // royal: отдельный предмет — тёмно-синяя бархатная капсула в золотой кромке на кремовой панели
+    c.fillStyle = 'rgba(40,30,90,0.28)'; rr(c, r.x - 1, r.y + 3, r.w + 2, r.h + 1, r.h / 2); c.fill();
+    const tg = c.createLinearGradient(0, r.y, 0, r.y + r.h); tg.addColorStop(0, '#1b2468'); tg.addColorStop(1, '#2d3ca6');
+    c.fillStyle = tg; rr(c, r.x, r.y, r.w, r.h, r.h / 2); c.fill();
+    c.strokeStyle = '#e2b24a'; c.lineWidth = 3; rr(c, r.x, r.y, r.w, r.h, r.h / 2); c.stroke();
+    c.strokeStyle = 'rgba(255,240,190,0.55)'; c.lineWidth = 1; rr(c, r.x + 2.5, r.y + 2.5, r.w - 5, r.h - 5, r.h / 2 - 2.5); c.stroke();
   } else {
   c.fillStyle = P.trayDeep; rr(c, r.x, r.y, r.w, r.h, 14); c.fill();
   c.fillStyle = P.trayBed; rr(c, r.x, r.y + 3, r.w, r.h - 3, 14); c.fill();          // тёмная кромка сверху — полоса «врезана» в панель
   }
-  if (hot){ c.save(); c.globalAlpha = 0.35 + 0.5 * beat; c.fillStyle = P.danger; rr(c, r.x, r.y, r.w, r.h, 14); c.fill(); c.restore(); }
-  else if (warn && ROYAL){ c.save(); c.globalAlpha = 0.3 + 0.3 * beat; c.fillStyle = P.tray; rr(c, r.x, r.y, r.w, r.h, r.h / 2); c.fill(); c.restore(); }   // royal: паз заливается оранжевым — одной обводки мало
+  if (hot){ c.save(); c.globalAlpha = (ROYAL ? 0.5 : 0.35) + 0.5 * beat; c.fillStyle = P.danger; rr(c, r.x, r.y, r.w, r.h, ROYAL ? r.h / 2 : 14); c.fill(); c.restore(); }
+  else if (warn && ROYAL){ c.save(); c.globalAlpha = 0.45 + 0.35 * beat; c.fillStyle = P.tray; rr(c, r.x, r.y, r.w, r.h, r.h / 2); c.fill(); c.restore(); }   // royal: паз заливается оранжевым — одной обводки мало
   if (hot || warn){ c.save(); c.globalAlpha = hot ? 1 : 0.6 + 0.4 * beat; c.strokeStyle = hot ? P.danger : P.tray; c.lineWidth = ROYAL ? 4 : 3; rr(c, r.x + 1.5, r.y + 1.5, r.w - 3, r.h - 3, ROYAL ? (r.h - 3) / 2 : 13); c.stroke(); c.restore(); }
   for (let k = 0; k < s.cap; k++){
     const p = trayXY(k, g);
-    c.fillStyle = P.traySlot; c.beginPath(); c.arc(p.x, p.y, p.r + 1, 0, Math.PI * 2); c.fill();
-    if (ROYAL){ c.save(); c.globalAlpha = 0.35; c.strokeStyle = '#b89558'; c.lineWidth = 2; c.beginPath(); c.arc(p.x, p.y + 1, p.r - 0.5, Math.PI * 1.1, Math.PI * 1.9); c.stroke(); c.restore(); }   // тень по верхней кромке лунки
+    if (ROYAL){                                     // royal: свободная лунка — глубокая тёмная яма с пунктиром внутри; занятая — крупная белая монетка
+      c.fillStyle = '#10164a'; c.beginPath(); c.arc(p.x, p.y, p.r + 1, 0, Math.PI * 2); c.fill();
+      c.strokeStyle = 'rgba(120,150,255,0.35)'; c.lineWidth = 1.5; c.beginPath(); c.arc(p.x, p.y, p.r + 1, Math.PI * 0.15, Math.PI * 0.85); c.stroke();   // отсвет по нижней кромке
+      if (k >= n){ c.save(); c.setLineDash([3, 3.5]); c.strokeStyle = 'rgba(140,180,255,0.6)'; c.lineWidth = 1.5; c.beginPath(); c.arc(p.x, p.y, p.r - 6, 0, Math.PI * 2); c.stroke(); c.restore(); }
+    } else { c.fillStyle = P.traySlot; c.beginPath(); c.arc(p.x, p.y, p.r + 1, 0, Math.PI * 2); c.fill(); }
     if (k < n){ const it = V.tray[k], pop = Math.max(0, 1 - (now - it.t) / 300); drawChip(c, it.color, p.x, p.y, p.r, 1 + 0.35 * pop); }
     else if (k === n && kind === 'tray'){
       c.save(); c.globalAlpha = 0.6 + 0.4 * Math.sin(now / 90); c.setLineDash([5, 4]); c.strokeStyle = '#fff'; c.lineWidth = 3; c.beginPath(); c.arc(p.x, p.y, p.r + 1, 0, Math.PI * 2); c.stroke(); c.restore();
@@ -2244,17 +2251,31 @@ function drawTray(c, g, now, kind){
   }
   // счётчик «занято/всего» в правом краю полосы — сколько места осталось, видно до переполнения
   const tx = r.x + r.w - TRAY_CNT / 2 - 4, ty = r.y + r.h / 2;
+  if (!ROYAL){                                      // royal: счётчика нет — заполнение видно по крупным лункам
   c.save(); c.fillStyle = hot ? P.danger : warn ? P.tray : ROYAL ? '#ffffff' : 'rgba(120,70,20,0.13)'; rr(c, tx - 20, ty - 12, 40, 24, 12); c.fill();   // royal: белая плашка
   if (ROYAL){ c.strokeStyle = hot || warn ? '#fff' : P.goalRim; c.lineWidth = 2; c.stroke(); }
   c.fillStyle = hot || warn ? '#fff' : P.pInk; c.font = '900 15px Nunito, system-ui, sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(n + '/' + s.cap, tx, ty + 1); c.restore();
+  }
   if (adSlotOpen(s)){                                            // рекламное место: зелёная лунка с плюсом; зовёт, когда лоток почти полон
     const p = trayXY(s.cap, g), call = n >= s.cap - 1 ? 0.5 + 0.5 * Math.sin(now / 200) : 0, k = 1 + 0.1 * call;
+    if (ROYAL){                                     // royal: зелёная «конфета» с белым плюсом и значком ролика; зовёт, когда лоток почти полон
+      const R2 = (p.r + 1) * k, gg = c.createLinearGradient(0, p.y - R2, 0, p.y + R2); gg.addColorStop(0, '#6fe07a'); gg.addColorStop(1, '#22a33a');
+      c.fillStyle = '#167a2a'; c.beginPath(); c.arc(p.x, p.y + 2, R2, 0, Math.PI * 2); c.fill();
+      c.fillStyle = gg; c.beginPath(); c.arc(p.x, p.y, R2, 0, Math.PI * 2); c.fill();
+      c.strokeStyle = '#ffffff'; c.lineWidth = 2.5; c.stroke();
+      c.strokeStyle = '#fff'; c.lineWidth = 4.5; c.lineCap = 'round'; const q = R2 * 0.45;
+      c.beginPath(); c.moveTo(p.x - q, p.y); c.lineTo(p.x + q, p.y); c.moveTo(p.x, p.y - q); c.lineTo(p.x, p.y + q); c.stroke();
+      const bx = p.x + R2 * 0.72, by = p.y - R2 * 0.72;
+      c.fillStyle = '#fff'; c.beginPath(); c.arc(bx, by, 8, 0, Math.PI * 2); c.fill(); c.fillStyle = P.ok; c.beginPath(); c.arc(bx, by, 6.5, 0, Math.PI * 2); c.fill();
+      c.fillStyle = '#fff'; c.beginPath(); c.moveTo(bx - 2, by - 3.2); c.lineTo(bx + 3.4, by); c.lineTo(bx - 2, by + 3.2); c.closePath(); c.fill();
+    } else {
     c.fillStyle = P.traySlot; c.beginPath(); c.arc(p.x, p.y, p.r + 1, 0, Math.PI * 2); c.fill();
     c.save(); c.setLineDash([4, 3]); c.strokeStyle = P.ok; c.lineWidth = 2; c.globalAlpha = 0.75 + 0.25 * call; c.beginPath(); c.arc(p.x, p.y, (p.r + 1) * k, 0, Math.PI * 2); c.stroke(); c.restore();
     c.strokeStyle = P.ok; c.lineWidth = 3; c.lineCap = 'round'; const q = p.r * 0.42 * k;
     c.beginPath(); c.moveTo(p.x - q, p.y); c.lineTo(p.x + q, p.y); c.moveTo(p.x, p.y - q); c.lineTo(p.x, p.y + q); c.stroke();
     c.fillStyle = P.ok; c.beginPath(); c.arc(p.x + p.r * 0.78, p.y - p.r * 0.78, 6, 0, Math.PI * 2); c.fill();        // значок «ролик»
     c.fillStyle = '#fff'; c.beginPath(); c.moveTo(p.x + p.r * 0.78 - 2, p.y - p.r * 0.78 - 3); c.lineTo(p.x + p.r * 0.78 + 3, p.y - p.r * 0.78); c.lineTo(p.x + p.r * 0.78 - 2, p.y - p.r * 0.78 + 3); c.closePath(); c.fill();
+    }
   }
 }
 
