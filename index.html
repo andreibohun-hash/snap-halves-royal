@@ -1883,7 +1883,7 @@ function drawPiece(c, code, x, y, s, alpha, scl, sx, sy, glow, t){
   const pad = s * 0.06, r = s * 0.2, cx = x + s / 2, cy = y + s / 2, kx = (scl || 1) * (sx || 1), ky = (scl || 1) * (sy || 1);
   c.save(); c.globalAlpha = alpha === undefined ? 1 : alpha;
   if (kx !== 1 || ky !== 1){ c.translate(cx, cy); c.scale(kx, ky); c.translate(-cx, -cy); }
-  if (ROYAL){                                       // royal v2 (мокап C): белая плитка без кромки; нужная заказу — приподнята, ненужная (glow < 0) — бледная и утоплена
+  if (ROYAL){                                       // royal v2 (мокап C): белая плитка без кромки. Различие нужных/ненужных (glow) с 17.11 не используется — render передаёт 0
     const dim = glow < 0, q = s * 0.035, w = s - 2 * q, rad = s * 0.18, lift = dim ? -s * 0.01 : s * 0.025, ty = y + q - lift;
     c.fillStyle = dim ? 'rgba(60,110,170,0.10)' : 'rgba(35,75,150,0.30)'; rr(c, x + q, ty + (dim ? s * 0.02 : s * 0.055), w, w, rad); c.fill();   // тень: у нужной длиннее
     const gr = c.createLinearGradient(0, ty, 0, ty + w); gr.addColorStop(0, '#ffffff'); gr.addColorStop(0.75, '#f6f8fc'); gr.addColorStop(1, '#dfe6f2');
@@ -2400,8 +2400,8 @@ function render(){
     if (ghost && ghost.partner === i) scl *= 1 + 0.06 * (0.5 + 0.5 * Math.sin(now / 80));
     const wc = colorOf(c), need = wc === RAINBOW ? wantAny : want[wc];      // нужна открытому заказу — фигура светится, после смены заказа вспыхивает
     let glow = 0;
-    if (need){ const fl = Math.max(0, 1 - (now - (G.wantT[wc] || 0)) / CFG.WANT_FLASH_MS); glow = 0.5 + 0.2 * Math.sin(now / 420 + i) + 0.3 * fl; scl *= 1 + 0.07 * Math.sin(fl * Math.PI); if (ROYAL) y -= cs * 0.12 * Math.sin(fl * Math.PI); }   // royal: новый заказ — нужные подскакивают
-    else if (ROYAL && wantAny) glow = -1;                                     // royal: не нужна открытым заказам — плитка гаснет (в лоток её класть можно)
+    if (need && !ROYAL){ const fl = Math.max(0, 1 - (now - (G.wantT[wc] || 0)) / CFG.WANT_FLASH_MS); glow = 0.5 + 0.2 * Math.sin(now / 420 + i) + 0.3 * fl; scl *= 1 + 0.07 * Math.sin(fl * Math.PI); }
+    // royal (17.11, решение Андрея «давай никак не подсвечивать»): на поле нужные и ненужные заказам плитки не различаются — все белые и яркие
     drawPiece(ctx, c, x, y, cs, 1, scl, sx, sy, glow, now);
     if (gh && gh.kind === 'chain'){ ctx.save(); ctx.globalAlpha = 1; drawChain(ctx, x, y, cs); ctx.restore(); }
     if (i === hintCell){ ctx.save(); ctx.globalAlpha = 0.45 + 0.45 * Math.abs(hintK); ctx.strokeStyle = P.accent; ctx.lineWidth = 3.5;
