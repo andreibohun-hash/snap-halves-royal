@@ -309,11 +309,11 @@ const CFG = {
   DEAL: 'miss',        // когда падает раздача: 'miss' — только после хода без стыковки (v0.8, решение Андрея); 'each' — после каждого хода; 'second' — через ход
   TRAY_PLUS: 0,        // добавка к лотку на всех уровнях (удалённый ключ tray_cap − TRAY_CAP; только ≥ 0 — только легче)
   WANT_BONUS: 0,       // сдвиг доли нужных раздач want на уровнях с раздачей (удалённый ключ want_bonus; только ≥ 0 — только легче)
-  LOOP_FROM: 51,       // после последнего уровня таблицы — по кругу с этого номера (номера на экране продолжают расти)
+  LOOP_FROM: 49,       // после последнего уровня таблицы — по кругу с этого номера (номера на экране продолжают расти)
   BOOST_START: 2,      // сколько каждого бустера (магнит, метла, отмена) лежит в сейве на старте
   REVIVE_PAIRS: 2,     // «Продолжить» после проигрыша: сколько пар под заказ магнит стыкует сам (плюс пустой лоток и метла)
-  BOOST_FROM: 7,       // с какого уровня видны бустеры и рекламное место в лотке (до этого игрок учит заказы и лоток)
-  INTER_FROM: 8,       // с какого уровня после победы стоял бы межуровневый ролик (заглушка: только строка в журнале)
+  BOOST_FROM: 5,       // с какого уровня видны бустеры и рекламное место в лотке (до этого игрок учит заказы и лоток)
+  INTER_FROM: 6,       // с какого уровня после победы стоял бы межуровневый ролик (заглушка: только строка в журнале)
   // --- оболочка: тайминги (мс, абсолютное время) и ввод ---
   SLIDE_MS_CELL: 55,   // скольжение плитки на одну клетку
   SLIDE_MIN_MS: 110,   // минимальная длительность скольжения
@@ -419,9 +419,13 @@ const SOFT = { every: 1, help: 1, want: 0.9, near: true, deal: 'each' };
 const HARD = { ...B, role: 'hard', colors: 5, pairs: 4, stones: 1, figs: 13, osz: 3, want: 0.42, hard: true };
 const LEVELS = [
   // --- глава 1: основа ---
-  { n: 1, layout: ['.....', '.....', 'h...H', '.....', '.....'], queue: ['h'], every: 0, lesson: true },
-  { n: 2, layout: ['.....', '.....', 'h.S.H', '.....', '.....', 's....'], queue: ['h', 's'], every: 0, lesson: true },
-  { n: 3, layout: ['.....', '.....', 'hc.CH', '.....', '.....'], queue: ['h', 'c'], show: 1, every: 0, lesson: true },
+  // 17.11 (Андрей: «1–3 уровни на одном поле туториальным блоком, не прерывать вин-скрином»): один уровень с фазами на поле 5×6.
+  // Фаза = раскладка (кладётся на пустое поле после предыдущей) + заказы (дописываются в общую очередь); show — сколько заказов фазы открыто сразу.
+  // Шаг 1 — одна пара (бывший урок 1), шаг 2 — звезда мешает (бывший 2), шаг 3 — урок лотка (бывший 3, заказы по одному). Победа — одна, в конце.
+  { n: 1, w: 5, h: 6, every: 0, lesson: true, block: [
+    { layout: ['.....', '.....', 'h...H', '.....', '.....', '.....'], queue: ['h'] },
+    { layout: ['.....', '.....', 'h.S.H', '.....', '.....', 's....'], queue: ['h', 's'] },
+    { layout: ['.....', '.....', 'hc.CH', '.....', '.....', '.....'], queue: ['h', 'c'], show: 1 } ] },
   // урок раздачи (v0.9): старт — готовая пара под руку и три одинокие половинки; раздача каждый ход (deal: 'each', как в v0.7) и только пары к одиноким,
   // «в ряд» с ними (near): почти каждый ход есть стыковка в один свайп, рука нужна только на первом ходу. audit/lesson4.mjs — замер вариантов
   { n: 4, layout: ['. . . . .', 'h . . . H', '. . . # .', '. . c . .', '. s . . H'], queue: ['h', 'c', 's', 'h', 'c'], colors: 3, every: 1, help: 1, want: 1, near: true, deal: 'each', lesson: true },
@@ -464,7 +468,7 @@ const LEVELS = [
   // --- F. таймер ---
   { n: 36, layout: ['h6 . . . .', '. . . . .', '. . . H .', '# . . . .', '. s . . S'], queue: ['h', 's'], every: 0, lesson: true },
   { n: 37, ...EASY,  timerP: 0.25, timer: 8, seed: 0 },
-  { n: 38, ...MID,   timers: 1, timerP: 0.3, timer: 7, seed: 9 },   // 17.11: переподбор после правила «ближайший заказ» (был 1)
+  { n: 38, ...MID,   timers: 1, timerP: 0.3, timer: 7, seed: 0 },   // 17.11: переподбор (был 1, потом 9 — после правила «ближайший заказ» и сдвига номеров)
   { n: 39, ...TOUGH, timerP: 0.3, timer: 7, seed: 4 },
   { n: 40, ...HARD,  want: 0.36, timerP: 0.25, timer: 8, chains: 2, seed: 30 },
   // --- G. тесный лоток ---
@@ -500,7 +504,7 @@ const LEVELS = [
   { n: 65, ...HARD,  chains: 2, timerP: 0.22, timer: 8, seed: 23 },
   // --- K. тесный лоток + таймер ---
   { n: 66, ...EASY,  cap: 3, timerP: 0.2, timer: 8, seed: 29 },
-  { n: 67, ...MID,   cap: 3, want: 0.58, timerP: 0.25, timer: 8, seed: 3 },
+  { n: 67, ...MID,   cap: 3, want: 0.58, timerP: 0.25, timer: 8, seed: 0 },
   { n: 68, ...TOUGH, cap: 3, want: 0.42, timerP: 0.25, timer: 7, seed: 3 },
   { n: 69, ...EASY,  cap: 3, colors: 4, timerP: 0.2, timer: 8, seed: 6 },
   { n: 70, ...HARD,  cap: 3, want: 0.5, timerP: 0.22, timer: 8, seed: 14 },
@@ -539,7 +543,10 @@ const LEVELS = [
   { n: 97, ...MID,   cap: 3, want: 0.58, rainbow: 0.12, seed: 12 },
   { n: 98, ...TOUGH, vert: 0.4, crates: 2, crateGoal: 2, figs: 10, want: 0.42, seed: 19 },
   { n: 99, ...EASY,  colors: 4, show: 3, honey: 2, rainbow: 0.1, seed: 19 },
-  { n: 100, ...HARD, figs: 15, want: 0.42, vert: 0.4, chains: 2, seed: 10 },
+  { n: 100, ...HARD, figs: 15, want: 0.42, vert: 0.4, chains: 2, seed: 26 },
+  // 17.11: после свёртки уроков 1–3 в блок — два уровня в конец (в духе финального блока: смеси), чтобы осталось 100
+  { n: 101, ...EASY,  vert: 0.3, crates: 2, crateGoal: 2, figs: 10, seed: 37 },
+  { n: 102, ...MID,   honey: 2, timerP: 0.2, timer: 8, seed: 1 },
 ];
 
 // После таблицы — по кругу с LOOP_FROM: уровень 101 повторяет LOOP_FROM, 102 — следующий и т. д. Поле и заказы те же
@@ -877,9 +884,24 @@ function genGrid(spec, seed){
   }
   return { grid, floor };
 }
+// Блок (уровень-туториал из фаз): все заказы фазы закрыты — на поле кладётся раскладка следующей фазы, её заказы — в общую очередь.
+// События: { type: 'phase', ph, cells } (вид: плитки впрыгивают), затем { type: 'order' } для открытых заказов. Победа — только после последней фазы.
+function advancePhase(s, ev, by){
+  while (s.block && s.ph < s.block.length - 1 && !ordersLeft(s) && s.crates >= s.crateGoal){
+    const P = s.block[++s.ph], L = parseLayout(P.layout), cells = [];
+    for (let i = 0; i < L.grid.length && i < s.grid.length; i++) if (L.grid[i] && s.grid[i] === 0){ s.grid[i] = L.grid[i]; cells.push(i); }
+    const q = genOrders(P, s.seed); s.queue = s.queue.concat(q); s.total += q.reduce((n, o) => n + o.length, 0);
+    ev.push({ type: 'phase', ph: s.ph, cells, by });
+    const open = P.show || s.show;
+    for (let a = 0; a < s.active.length && a < open; a++) if (!s.active[a] && s.oi < s.queue.length){ s.active[a] = newOrder(s); ev.push({ type: 'order', slot: a, id: s.active[a].id, by }); }
+    settle(s, ev, by);
+  }
+}
 function levelSeed(spec){ return 1000 + spec.n * 97 + (spec.seed || 0); }
 function createState(li){
   const spec = levelSpec(li), seed = levelSeed(spec);
+  if (spec.block){ const P = spec.block[0], L = parseLayout(P.layout), s = makeState(li, { ...spec, ...P, show: spec.show }, L.grid, L.w, L.h, seed, L.floor);   // блок: первая фаза
+    s.block = spec.block; s.ph = 0; for (let a = 0; a < s.active.length; a++) if (a >= (P.show || s.show)) s.active[a] = null; s.oi = s.active.filter(Boolean).length; return s; }
   if (spec.layout){ const L = parseLayout(spec.layout); return makeState(li, spec, L.grid, L.w, L.h, seed, L.floor); }
   const G0 = genGrid(spec, seed);
   return makeState(li, spec, G0.grid, spec.w, spec.h, seed, G0.floor);
@@ -923,6 +945,7 @@ function applyMove(s, m){
   const last = { from: i, to: j, dir: d, code, dist: Math.abs(j - i) / (d < 2 ? 1 : n.w), partner: -1, color: -1, target: null, spawn: null, extra: [], ev: [] };
   const p = dockPartner(n.grid, n.w, n.h, j, code);
   if (p >= 0){ last.partner = p; last.partnerCode = n.grid[p]; const dk = dock(n, j, p, last.ev, 'move'); last.color = dk.color; last.target = dk.target; }
+  advancePhase(n, last.ev, 'move');                   // блок: фаза закрыта — следующая раскладка и заказы
   if (!isWin(n) && !n.trayOver){
     tickTimers(n, last.ev);
     if (n.every > 0){
@@ -1192,6 +1215,13 @@ function log(kind, name, info){            // журнал [game] — одна �
 }
 
 const SAVE_KEY = SKIN === 'royal' ? 'snaphalves-royal.v1' : NAME + '.v1';   // у royal свой сейв: обе ссылки Pages на одном домене, прогресс не смешиваем
+// 17.11: уроки 1–3 свёрнуты в один уровень — прогресс сдвигается на −2 (не ниже 1-го), лучшие результаты — тоже. Один раз (v: 2).
+function migrateSave(sv){
+  if ((sv.v || 1) >= 2) return sv;
+  const had = sv.level > 0 || Object.keys(sv.best || {}).length > 0;
+  if (had){ sv.level = Math.max(0, (sv.level || 0) - 2); const b = {}; for (const k in (sv.best || {})){ const n = Number(k) - 2; if (n >= 0) b[n] = sv.best[k]; } sv.best = b; }
+  sv.v = 2; return sv;
+}
 function loadSave(){ try { return JSON.parse(localStorage.getItem(SAVE_KEY)) || {}; } catch (e) { return {}; } }
 function save(){ try { localStorage.setItem(SAVE_KEY, JSON.stringify(G.save)); } catch (e) {} }
 
@@ -1200,7 +1230,7 @@ const G = {
   hist: [],                      // стек состояний для бустера Undo (через бустер и «Continue» отмена не шагает)
   par: null,                     // лучшее решение солвера (для звёзд), считается на победе
   screen: 'menu',                // menu | game | settings | win | lose | offer | ad | help (DEV)
-  save: Object.assign({ level: 0, muted: false, haptics: true, best: {}, unlockAll: false }, loadSave()),   // unlockAll — чит «открыть все уровни» (DEV); boost — запас бустеров (заводит hud)
+  save: migrateSave(Object.assign({ level: 0, muted: false, haptics: true, best: {}, unlockAll: false }, loadSave())),   // unlockAll — чит «открыть все уровни» (DEV); boost — запас бустеров (заводит hud)
   slide: null,                   // { code, from, to, t0, t1 } — скользящая плитка
   drops: [],                     // [{ code, cell, t0, t1 }] — проявляющиеся раздачи (обычная и те, что упали сами, когда ходить было нечем)
   merges: [], waves: [],                    // [{ aCell, bCell, aCode, bCode, vert, active, color, tShow, t0, t1, flyEnd, slot, target, combo }]
@@ -1490,7 +1520,7 @@ function startLevel(li){
   CFG.DEAL = RC.deal;                                               // раздача: умолчание ядра или deal_mode из удалённого конфига
     G.s = createState(li); G.s0 = G.s; G.hist = []; G.par = null;
   if (G.screen === 'settings') setPaused('settings', false);
-  G.ending = 0; G.drag = null; G.winT = 0; G.revived = false; G.revives = 0; G.overColor = null; G.offerKey = ''; G.failKey = ''; G.ordX = {}; G.leaving = []; G.queued = null; G.winHoldK = 1; G.bestCombo = 0; G.traySweep = null; TUT.q = []; TUT.due = []; if (TUT.cur){ TUT.cur = null; setPaused('tut', false); if (TUT.cv) TUT.cv.style.display = 'none'; } tutQueue(TUT_START[li] || []); G.wantPrev = []; G.wantT = []; G.view = null; snapView(); clearFx(true); G.levelT0 = clock(); G.lastInputT = G.levelT0; G.hintFor = null;
+  G.ending = 0; G.drag = null; G.winT = 0; G.revived = false; G.revives = 0; G.overColor = null; G.offerKey = ''; G.failKey = ''; G.ordX = {}; G.leaving = []; G.queued = null; G.phaseIn = null; G.winHoldK = 1; G.bestCombo = 0; G.traySweep = null; TUT.q = []; TUT.due = []; if (TUT.cur){ TUT.cur = null; setPaused('tut', false); if (TUT.cv) TUT.cv.style.display = 'none'; } tutQueue(TUT_START[li] || []); G.wantPrev = []; G.wantT = []; G.view = null; snapView(); clearFx(true); G.levelT0 = clock(); G.lastInputT = G.levelT0; G.hintFor = null;
   Audio.intro(); log('fx.start', 'intro'); G.fxOpen.push({ name: 'intro', t1: G.levelT0 + CFG.INTRO_MS + CFG.INTRO_STEP * 12 });
   G.cursor = G.s.grid.findIndex(c => c > 0);
   const spec = levelSpec(li);
@@ -1559,7 +1589,7 @@ function animateMove(n){
     if (bx >= 0 && by >= 0 && bx < n.w && by < n.h) G.hit = { cell: by * n.w + bx, dir: L.dir, t0: t1, t1: t1 + CFG.HIT_MS / ts };
     else if (L.dist >= 2) shakeAt(t1, 2);
   }
-  const chain = (by) => L.ev.filter(e => e.by === by && (e.type === 'done' || e.type === 'order' || e.type === 'untray'));
+  const chain = (by) => L.ev.filter(e => e.by === by && (e.type === 'done' || e.type === 'order' || e.type === 'untray' || e.type === 'phase'));
   let tNext = t1, tEnd = t1;
   if (L.partner >= 0){
     tEnd = addMerge({ active: L.to, partner: L.partner, code: L.code, partnerCode: L.partnerCode, color: L.color, target: L.target, tShow: T, t0: t1, combo: G.combo, kind: 'move', evs: chain('move') });
@@ -1871,6 +1901,11 @@ function scheduleDelivery(T, color, tL, evs){
         V.cards[e.slot] = { id, c, f: c.map(() => false), pop: c.map(() => 0), born: t, done: 0, from }; V.oi = Math.max(V.oi, id + 1);
         if (ROYAL && s.queue[V.oi]){ const gg = geo(); G.ordX['n' + V.oi] = { from: gg.px + gg.pw - 30, to: null, t0: t }; V.nextT = t; } });   // новый «следующий» въезжает справа
       tc += (ROYAL ? R_ORD.grow : CFG.ORDER_IN_MS) / ts;
+    } else if (e.type === 'phase'){                // блок: следующий шаг — его плитки впрыгивают на поле (до этого скрыты), звук и искры
+      const t = tc + 160 / ts; G.phaseIn = { t0: t, cells: e.cells.slice() };
+      Audio.order(delay(t)); for (const i of e.cells){ const p = cellXY(i, g); burst(6, p.x + g.cell / 2, p.y + g.cell / 2, t + 60 / ts, { type: 'star', color: -2, v: 0.1, life: 360, r: 4, g: 0 }); }
+      log('event', 'phase', 'ph=' + e.ph + ' cells=' + e.cells.length);
+      tc = t + (CFG.INTRO_MS + CFG.INTRO_STEP * 6) / ts;
     } else if (e.type === 'untray'){
       const t0 = tc, t1 = tc + CFG.UNTRAY_MS / ts, T2 = { kind: 'order', slot: e.slot, k: e.k, id: e.id, n: s.queue[e.id].length };
       vAt(t0, () => { const i = Math.min(e.from, G.view.tray.length - 1); if (i >= 0) G.view.tray.splice(i, 1); G.flies.push({ color: e.color, from: e.from, T: T2, t0, t1 }); });
@@ -2156,7 +2191,7 @@ function finishEnding(){
     log('event', 'reward', 'moves=' + G.s.moves + ' par=' + G.par);
     const W0 = ['Well done!', 'Great job!', 'Awesome!', 'Brilliant!'];
     if (ROYAL){ royalWin(); return; }                // royal: салют на ночном небе с логотипом, потом карточка (Sand Pop-реф, 17.11)
-    goto('win', { title: li < 3 ? 'Well done!' : W0[li % W0.length] });
+    goto('win', { title: li < 1 ? 'Well done!' : W0[li % W0.length] });
     cannons(clock() + 60, 1);
   } else { Audio.lose(); buzz(120); goto('lose'); }
 }
@@ -2900,7 +2935,7 @@ function drawTray(c, g, now, kind){
 // На шаге «пара» касание в пятне сразу отдаёт свайп полю. Каждый шаг — один раз (G.save.tut; сброс прогресса в DEV его обнуляет).
 const TUT_ON = ROYAL, TUT_MS = 1800, TUT_DIM = 0.65;
 const TUT_DUR = { untray: 900 };   // 17.11 (Андрей): фокус «лоток отдал фигуру в заказ» на 3-м — вдвое короче, и праздник после него тоже (G.winHoldK)
-const TUT_START = { 0: ['goal', 'pair'], 3: ['ghost'], 6: ['boosts'], 10: ['vert'], 15: ['honey'], 20: ['rainbow'], 25: ['crates'], 30: ['chain'], 35: ['timer'] };   // по индексу уровня
+const TUT_START = { 0: ['goal', 'pair'], 1: ['ghost'], 4: ['boosts'], 8: ['vert'], 13: ['honey'], 18: ['rainbow'], 23: ['crates'], 28: ['chain'], 33: ['timer'] };   // 17.11: уроки 1–3 — один блок, номера −2   // по индексу уровня
 const TUT = { q: [], cur: null, t0: 0, cv: null, slot: -1, due: [] };
 // Событийный шаг — по времени, а не через очередь вида: новый ход догоняет вид (snapView) и стёр бы его.
 function tutAt(id, t, slot){ if (TUT_ON && !tutSeen(id) && !TUT.due.some(d => d.id === id)) TUT.due.push({ id, t, slot: slot === undefined ? -1 : slot }); }
@@ -3107,6 +3142,10 @@ function render(){
     if (c === STONE){ drawStone(ctx, i, x, y, cs); continue; }
     if (c === CRATE){ if (ROYAL){ crateShadow(ctx, x, y, cs); drawCrate(ctx, x + cs * 0.08, y + cs * 0.05, cs * 0.84); } else drawCrate(ctx, x, y, cs); continue; }   // royal: ящик меньше клетки и стоит на ней
     let scl = 1, sx = 1, sy = 1;
+    if (G.phaseIn && G.phaseIn.cells.indexOf(i) >= 0){   // блок: плитки нового шага скрыты, пока закрытый заказ не ушёл, потом впрыгивают по диагонали
+      const v = (now - G.phaseIn.t0 - CFG.INTRO_STEP * ((i % s.w) + Math.floor(i / s.w)) * 0.6) / CFG.INTRO_MS;
+      if (v <= 0) continue; if (v < 1) scl = 0.35 + 0.65 * backOut(v);
+    }
     if (now < G.levelT0 + CFG.INTRO_MS + CFG.INTRO_STEP * (s.w + s.h)){   // старт уровня: плитки впрыгивают по диагонали
       const v = (now - G.levelT0 - CFG.INTRO_STEP * ((i % s.w) + Math.floor(i / s.w))) / CFG.INTRO_MS;
       scl = 0.35 + 0.65 * backOut(v);
