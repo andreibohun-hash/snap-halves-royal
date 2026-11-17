@@ -559,12 +559,21 @@ function neighbors4(i, w, h){ const x = i % w, y = (i - x) / w, o = []; if (x > 
 // Заказ — { id, c: [цвета], f: [закрыто?] }. Открыто show заказов (слоты s.active, пустой слот — null); очередь — s.queue.
 function newOrder(s){ const c = s.queue[s.oi]; return { id: s.oi++, c, f: c.map(() => false) }; }
 // Кладёт фигуру цвета col в первый открытый заказ, где она нужна (радужная целая подходит в любое место). Нет места — null.
+// Фигура уходит в тот открытый заказ, которому она нужна и который ближе всего к завершению (меньше всего пустых мест);
+// при равенстве — в старший в очереди (меньший id). Решение Андрея 17.11: «дособирать почти готовый заказ, чем начинать новый».
+// Одно правило для стыковки, отдачи из лотка (settle), магнита и «Продолжить» — все идут через place.
 function place(s, col){
+  let best = null;
   for (let a = 0; a < s.active.length; a++){
     const o = s.active[a]; if (!o) continue;
-    for (let k = 0; k < o.c.length; k++) if (!o.f[k] && (o.c[k] === col || col === RAINBOW)){ o.f[k] = true; s.served++; return { kind: 'order', slot: a, k, id: o.id, color: o.c[k] }; }
+    let k = -1, left = 0;
+    for (let i = 0; i < o.c.length; i++) if (!o.f[i]){ left++; if (k < 0 && (o.c[i] === col || col === RAINBOW)) k = i; }
+    if (k < 0) continue;
+    if (!best || left < best.left || (left === best.left && o.id < best.o.id)) best = { a, k, o, left };
   }
-  return null;
+  if (!best) return null;
+  best.o.f[best.k] = true; s.served++;
+  return { kind: 'order', slot: best.a, k: best.k, id: best.o.id, color: best.o.c[best.k] };
 }
 // Какие цвета сейчас нужны открытым заказам.
 function wantedColors(s){ const w = [false, false, false, false, false]; for (const o of s.active) if (o) o.c.forEach((c, k) => { if (!o.f[k]) w[c] = true; }); return w; }
@@ -1441,7 +1450,7 @@ function animateMove(n){
     tEnd = addMerge({ active: L.to, partner: L.partner, code: L.code, partnerCode: L.partnerCode, color: L.color, target: L.target, tShow: T, t0: t1, combo: G.combo, kind: 'move', evs: chain('move') });
     Audio.click(n.served, slideMs / 1000, G.combo); buzz([10, 30, 14]);
     tNext = t1 + CFG.DOCK_MS * 0.55 / ts;
-    if (ROYAL && !L.spawn && n.next && n.every > 0){ G.clawClick = t1; Audio.latch(slideMs / 1000); }   // royal: стыковка — стопор щёлкает, захват держит дальше
+    if (ROYAL && CLAW_ON && !L.spawn && n.next && n.every > 0){ G.clawClick = t1; Audio.latch(slideMs / 1000); }   // royal: стыковка — стопор щёлкает, захват держит дальше
   } else Audio.thunk(slideMs / 1000, L.dist);
   const sp = animateSpawns(L, T, tNext, n.served);
   tEnd = Math.max(tEnd, sp);
@@ -1455,10 +1464,10 @@ function animateSpawns(L, T, t0, served){
   const ts = G.timeScale, list = (L.spawn ? [{ S: L.spawn, by: 'spawn' }] : []).concat((L.extra || []).map((S, q) => ({ S, by: 'extra' + q })));
   let t = t0, tEnd = t0;
   for (const { S, by } of list){
-    const travel = ROYAL && S.planned >= 0 && S.planned !== S.cell ? CLAW.move : 0;   // royal: клетку заняли — захват везёт груз к новой
-    const d1 = t + (ROYAL ? travel + 40 + CLAW.fall + CLAW.land : CFG.SPAWN_MS) / ts, g = geo();
+    const claw = ROYAL && CLAW_ON, travel = claw && S.planned >= 0 && S.planned !== S.cell ? CLAW.move : 0;   // royal: клетку заняли — захват везёт груз к новой
+    const d1 = t + (claw ? travel + 40 + CLAW.fall + CLAW.land : CFG.SPAWN_MS) / ts, g = geo();
     G.drops.push({ code: S.code, cell: S.cell, t0: t, t1: d1, planned: S.planned, travel });
-    if (ROYAL) Audio.clack((t + travel / ts - T) / 1000);
+    if (claw) Audio.clack((t + travel / ts - T) / 1000);
     fxOpen('drop', d1, 'cell=' + S.cell + (S.cell !== S.planned ? ' moved' : '') + (by !== 'spawn' ? ' auto' : ''));
     Audio.plop((t - T) / 1000);
     if (S.partner >= 0){
@@ -2214,6 +2223,7 @@ function drawStone(c, i, x, y, s){
 // Над клеткой посадки висит игрушечный захват и держит следующую половинку (крупно, без плитки); на клетке — тень.
 // Ход со стыковкой — щелчок стопора (держит дальше); ход без стыковки — разжимается, половинка падает с отскоком; клетку заняли —
 // захват переезжает с грузом; новый захват с новой половинкой опускается сверху. Только вид: s.next / s.k / drop.planned из ядра.
+const CLAW_ON = false;   // захват раздачи отклонён Андреем 17.11 («захват не нравится») — royal снова показывает призрак v2; код и спрайт оставлены
 const CLAW = { w: 0.84, hold: 0.62, pieceK: 0.72, desc: 450, move: 320, rel: 90, fall: 210, land: 150 };   // ширина в клетках, центр хвата в высоте спрайта, доля половинки, тайминги (мс)
 function clawShadow(c, x, y, cs, k, a){ c.save(); c.globalAlpha = a; c.fillStyle = 'rgba(30,60,110,0.9)'; c.beginPath(); c.ellipse(x + cs / 2, y + cs * 0.86, cs * 0.26 * k, cs * 0.07 * k, 0, 0, Math.PI * 2); c.fill(); c.restore(); }
 function clawPiece(c, code, hx, hy, cs, k){        // половинка в захвате: центр её видимой части — в точке хвата
@@ -2653,7 +2663,7 @@ function render(){
   }
   for (let i = 0; i < s.grid.length; i++){ const p = cellXY(i, g); if (!base){ ctx.fillStyle = P.slot; rr(ctx, p.x + cs * 0.05, p.y + cs * 0.05, cs * 0.9, cs * 0.9, cs * 0.18); ctx.fill(); } if (s.floor[i] === HONEY) drawHoney(ctx, p.x - (s.grid[i] > 0 ? cs * 0.06 : 0), p.y - (s.grid[i] > 0 ? cs * 0.04 : 0), cs * (s.grid[i] > 0 ? 1.12 : 1)); }
   // искра следующей раздачи
-  if (s.every > 0 && s.next && s.next.cell >= 0 && !isWin(s) && !G.drops.some(D => now < D.t1)){ const p = cellXY(s.next.cell, g); if (!(ROYAL && ART.clawClosed)) drawSpark(ctx, p.x, p.y, cs, s.next.code, now); }
+  if (s.every > 0 && s.next && s.next.cell >= 0 && !isWin(s) && !G.drops.some(D => now < D.t1)){ const p = cellXY(s.next.cell, g); if (!(ROYAL && CLAW_ON && ART.clawClosed)) drawSpark(ctx, p.x, p.y, cs, s.next.code, now); }
   // превью свайпа: честный расчёт ядра — куда доедет и будет ли щёлк
   let ghost = null;
   if (G.drag && G.drag.dir >= 0){
@@ -2751,7 +2761,7 @@ function render(){
     if (s.floor[i] !== HONEY || s.grid[i] <= 0 || skip.has(i)) continue;
     const p = cellXY(i, g); ctx.save(); rr(ctx, p.x, p.y + cs * 0.8, cs, cs * 0.2, 0); ctx.clip(); drawHoney(ctx, p.x + cs * 0.1, p.y + cs * 0.3, cs * 0.8); ctx.restore();
   }
-  if (ROYAL && ART.clawClosed && s.every > 0 && s.next && s.next.cell >= 0 && !isWin(s) && !G.drops.some(D => now < D.t1)) drawClawIdle(ctx, g, s, now);   // royal: захват — поверх плиток (тросик над клеткой)
+  if (ROYAL && CLAW_ON && ART.clawClosed && s.every > 0 && s.next && s.next.cell >= 0 && !isWin(s) && !G.drops.some(D => now < D.t1)) drawClawIdle(ctx, g, s, now);   // royal: захват — поверх плиток (тросик над клеткой)
   if (G.kbd && s.grid[G.cursor] <= 0){ const p = cellXY(G.cursor, g); ctx.strokeStyle = P.accent; ctx.lineWidth = 2; rr(ctx, p.x + 4, p.y + 4, cs - 8, cs - 8, cs * 0.2); ctx.stroke(); }
   // стоящие половинки стыковок (уже удалены из ядра) — до момента стыковки
   for (const M of G.merges){
@@ -2783,7 +2793,7 @@ function render(){
     if (now >= D.t1) continue;
     // призрак в клетке становится плиткой: до начала — тот же призрак, затем плитка проявляется с лёгким отскоком
     const p = cellXY(D.cell, g);
-    if (ROYAL && ART.clawClosed){ drawClawDrop(ctx, g, D, now); continue; }   // royal: сброс из захвата
+    if (ROYAL && CLAW_ON && ART.clawClosed){ drawClawDrop(ctx, g, D, now); continue; }   // royal: сброс из захвата
     if (now < D.t0) drawSpark(ctx, p.x, p.y, cs, D.code, now);
     else {
       const u = (now - D.t0) / (D.t1 - D.t0), w = Math.min(1, u / 0.7), v = backOut(w), q = u < 0.7 ? 0 : Math.sin((u - 0.7) / 0.3 * Math.PI) * 0.12;
