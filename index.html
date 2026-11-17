@@ -884,6 +884,15 @@ function useBroom(s){
   n.last.extra = topUp(n, n.last.ev);
   return n;
 }
+// Очистка лотка (royal-метла, 17.11 — решение Андрея «пусть просто очищает стеш»): все фигуры из лотка убираются; ход не тратится.
+// Пустой лоток — null (бустер не тратится). Classic v0.9 по-прежнему метёт ряд (useBroom).
+function useTrayClear(s){
+  if (isWin(s) || isLose(s) || !s.tray.length) return null;
+  const n = cloneState(s), gone = n.tray.slice();
+  n.tray = [];
+  n.last = { boost: 'trayclear', gone, partner: -1, spawn: null, ev: [], extra: [] };
+  return n;
+}
 // Рекламное место в лотке: +1 место до конца уровня, один раз за уровень (оболочка показывает его закрытой лункой).
 function addTraySlot(s){
   if (s.capBonus || isWin(s) || isLose(s)) return null;
@@ -1356,7 +1365,7 @@ function startLevel(li){
   CFG.DEAL = RC.deal;                                               // раздача: умолчание ядра или deal_mode из удалённого конфига
     G.s = createState(li); G.s0 = G.s; G.hist = []; G.par = null;
   if (G.screen === 'settings') setPaused('settings', false);
-  G.ending = 0; G.drag = null; G.winT = 0; G.revived = false; G.ordX = {}; G.leaving = []; G.bestCombo = 0; G.wantPrev = []; G.wantT = []; G.view = null; snapView(); clearFx(true); G.levelT0 = clock(); G.lastInputT = G.levelT0; G.hintFor = null;
+  G.ending = 0; G.drag = null; G.winT = 0; G.revived = false; G.ordX = {}; G.leaving = []; G.bestCombo = 0; G.traySweep = null; G.wantPrev = []; G.wantT = []; G.view = null; snapView(); clearFx(true); G.levelT0 = clock(); G.lastInputT = G.levelT0; G.hintFor = null;
   Audio.intro(); log('fx.start', 'intro'); G.fxOpen.push({ name: 'intro', t1: G.levelT0 + CFG.INTRO_MS + CFG.INTRO_STEP * 12 });
   G.cursor = G.s.grid.findIndex(c => c > 0);
   const spec = levelSpec(li);
@@ -1748,15 +1757,16 @@ function useBoost(kind){
   if (kind === 'undo' && !G.hist.length){ toast('Nothing to undo'); Audio.nope(); log('event', 'boost.none', kind); return false; }   // нечего отменять — не тратится и не продаётся
   if ((G.save.boost[kind] || 0) <= 0){ G.offer = kind; adOffer(kind); goto('offer'); return false; }
   if (kind === 'undo'){ G.save.boost.undo--; save(); log('event', 'boost.use', 'undo left=' + G.save.boost.undo); undo(); return true; }
-  const n = kind === 'magnet' ? useMagnet(G.s) : useBroom(G.s);
-  if (!n){ toast(kind === 'magnet' ? 'No pair for an open order' : 'Nothing to sweep'); Audio.nope(); log('event', 'boost.none', kind); return false; }
+  const n = kind === 'magnet' ? useMagnet(G.s) : ROYAL ? useTrayClear(G.s) : useBroom(G.s);   // royal (17.11): метла очищает лоток
+  if (!n){ toast(kind === 'magnet' ? 'No pair for an open order' : ROYAL ? 'Tray is empty' : 'Nothing to sweep'); Audio.nope(); log('event', 'boost.none', kind); return false; }
   G.save.boost[kind]--; save();
   snapView(); clearFx(false);
   const T = clock(); G.lastInputT = T; G.hist = []; G.combo = 0; G.s = n;   // через бустер отмена не шагает
+  if (ROYAL && kind === 'broom') G.view.tray = [];  // royal-метла: лоток пуст сразу, фигуры улетают анимацией (drawTraySweep)
   log('event', 'boost.use', kind + ' left=' + G.save.boost[kind]);
   let tEnd = T;
   if (kind === 'magnet'){ tEnd = animateMagnet(n.last, T, n.last.ev.filter(e => e.by === 'boost')); animateEvents(n.last, T, T + CFG.MAGNET_MS / G.timeScale); }
-  else tEnd = animateBroom(n.last, T);
+  else tEnd = ROYAL ? animateTrayClear(n.last, T) : animateBroom(n.last, T);
   if (n.last.extra.length) tEnd = Math.max(tEnd, animateSpawns(n.last, T, tEnd + 80 / G.timeScale, n.served));   // поле опустело — раздача упала сама
   hud();
   if (isWin(n)){ log('event', 'level.win', 'level=' + (n.li + 1) + ' moves=' + n.moves + ' by=' + kind); celebrate(Math.max(tEnd, G.merges.reduce((m, M) => Math.max(m, M.flyEnd), T))); }
@@ -1785,6 +1795,43 @@ function animateMagnet(L, T, evs){
   return addMerge({ active: L.a, partner: L.b, code: L.aCode, partnerCode: L.bCode, color: L.color, target: L.target, tShow: T, t0, combo: 1, kind: 'magnet', evs: chain });
 }
 // Метла: полоса идёт по ряду или столбцу, половинки исчезают по мере прохода. L = { row, col, gone: [{ cell, code }] }.
+// Значок лотка (royal): маленькая плетёная корзинка — «сюда кладутся фигуры про запас». Кодом, без текста.
+function drawBasket(c, x, y){
+  c.save();
+  c.strokeStyle = '#7a4a1c'; c.lineWidth = 2.4; c.lineCap = 'round'; c.beginPath(); c.arc(x, y - 3, 8, Math.PI * 1.05, Math.PI * 1.95); c.stroke();   // ручка
+  c.beginPath(); c.moveTo(x - 11, y - 2); c.lineTo(x + 11, y - 2); c.lineTo(x + 8, y + 10); c.lineTo(x - 8, y + 10); c.closePath();
+  const bg = c.createLinearGradient(0, y - 2, 0, y + 10); bg.addColorStop(0, '#d39a52'); bg.addColorStop(1, '#a8682c'); c.fillStyle = bg; c.fill();
+  c.strokeStyle = '#7a4a1c'; c.lineWidth = 1.6; c.stroke();
+  c.save(); c.clip(); c.strokeStyle = 'rgba(122,74,28,0.7)'; c.lineWidth = 1.2; c.beginPath();
+  for (const yy of [y + 2, y + 6]){ c.moveTo(x - 12, yy); c.lineTo(x + 12, yy); }
+  for (const xx of [-5, 0, 5]){ c.moveTo(x + xx, y - 2); c.lineTo(x + xx * 0.75, y + 10); } c.stroke(); c.restore();
+  c.fillStyle = '#efc070'; rr(c, x - 12.5, y - 5, 25, 4.5, 2.2); c.fill(); c.strokeStyle = '#7a4a1c'; c.lineWidth = 1.2; c.stroke();   // ободок
+  c.restore();
+}
+// Royal-метла: по лотку слева направо проходит золотая полоса, фигуры по очереди вылетают вправо-вверх с пылью и искрами.
+function animateTrayClear(L, T){
+  const g = geo(), ms = 520 / G.timeScale, t1 = T + ms, r = trayRect(g);
+  G.traySweep = { t0: T, t1, items: L.gone.map((color, k) => ({ color, k })) };
+  L.gone.forEach((color, k) => { const p = trayXY(k, g), at = T + ms * (p.x - r.x) / r.w;
+    burst(8, p.x, p.y, at, { type: 'dust', color: -1, v: 0.12, life: 460, r: 5, g: 0 });
+    burst(6, p.x, p.y, at, { type: 'rect', colors: [color, -2], v: 0.2, vy: -0.12, life: 600, r: 3.5, g: 0.0005 }); });
+  praise('Swept!', r.x + r.w / 2, r.y - 8, t1, P.accent, 24);
+  Audio.broom(); buzz(30); shakeAt(T, 2);
+  fxOpen('trayclear', t1 + 300, 'items=' + L.gone.length);
+  return t1;
+}
+function drawTraySweep(c, g, now){
+  const S = G.traySweep; if (!S) return;
+  if (now >= S.t1 + 400){ G.traySweep = null; return; }
+  const r = trayRect(g), ms = S.t1 - S.t0, u = Math.max(0, Math.min(1, (now - S.t0) / ms));
+  for (const it of S.items){                       // фигура: стоит, пока полоса не дошла, потом улетает вправо-вверх, кружась и тая
+    const p = trayXY(it.k, g), at = S.t0 + ms * (p.x - r.x) / r.w, v = Math.max(0, (now - at) / 380);
+    if (v >= 1) continue;
+    c.save(); c.globalAlpha = 1 - v; c.translate(p.x + v * 70, p.y - Math.sin(v * Math.PI) * 26 - v * 10); c.rotate(v * 2.5); drawChip(c, it.color, 0, 0, p.r * (1 - 0.3 * v)); c.restore();
+  }
+  if (u < 1){ const x = r.x + r.w * u, gr = c.createLinearGradient(x - 40, 0, x + 6, 0); gr.addColorStop(0, 'rgba(255,215,90,0)'); gr.addColorStop(1, 'rgba(255,225,120,0.9)');
+    c.save(); rr(c, r.x, r.y, r.w, r.h, r.h / 2); c.clip(); c.fillStyle = gr; c.fillRect(x - 40, r.y, 46, r.h); c.restore(); }   // золотая полоса метлы
+}
 function animateBroom(L, T){
   const g = geo(), cs = g.cell, ms = CFG.BROOM_MS / G.timeScale, t1 = T + ms, s = G.s;
   G.sweep = { row: L.row, col: L.col, t0: T, t1 };
@@ -1891,8 +1938,8 @@ function toVirtual(e){ const r = cv.getBoundingClientRect(); return { x: (e.clie
 const ORD_H = 56, ORD_GAP = 8, CHIP_R = 20, CHIP_STEP = 47, CARD_PAD = 16;   // карточка заказа облегает свои фишки: высота, зазор, радиус и шаг фишек, поля
 const NEXT_H = 36, NEXT_STEP = 18, NEXT_PAD = 14;                    // маленькая карточка «следующий заказ»: высота, шаг фигур, поля
 const CRATE_CARD_W = 92;                                              // карточка-цель «ящики»: фишка-ящик и счётчик «0/3»
-const RT = SKIN === 'royal';                                          // royal (17.11, мокап лотка C): лоток — тёмно-синяя капсула с крупными лунками, без счётчика
-const BAND_PAD = 10, TRAY_GAP = 8, TRAY_H = RT ? 54 : 42, TRAY_S = RT ? 42 : 30, TRAY_STEP = RT ? 50 : 37, TRAY_PAD = RT ? 7 : 8, TRAY_CNT = RT ? 0 : 46;   // лоток в панели цели: отступ от карточек, высота, место, шаг, поля, место под счётчик «2/4»
+const RT = SKIN === 'royal';                                          // royal (17.11, мокап лотка D): компактный карамельный паз в золоте, корзинка слева, без счётчика
+const BAND_PAD = 10, TRAY_GAP = 8, TRAY_H = RT ? 40 : 42, TRAY_S = RT ? 30 : 30, TRAY_STEP = RT ? 36 : 37, TRAY_PAD = RT ? 6 : 8, TRAY_CNT = RT ? 0 : 46, TRAY_ICON = RT ? 32 : 0;   // лоток в панели цели: отступ от карточек, высота, место, шаг, поля, место под счётчик «2/4»
 const PANEL_H = BAND_PAD + ORD_H + TRAY_GAP + TRAY_H + BAND_PAD;     // панель цели целиком
 const TOP_GAP = 30, BOTTOM_PAD = 18;                                  // зазор между панелью цели и полем (разнесены); поле под рамкой
 function geo(){
@@ -2308,8 +2355,8 @@ function orderSlotXY(a, k, n, g){ const L = ordersLayout(g, { slot: a, n }), r =
 // Лоток — общий запас под рядом заказов, в той же панели цели: утопленная полоса с лунками и счётчиком «занято/всего».
 // Заполненность видна заранее: осталось одно место — лоток и счётчик янтарные, свободная лунка мигает «!»; полон — красный.
 function traySide(){ return false; }   // вариант «карман в краю полки» (v0.7.3) убран: Андрей выбрал паз
-function trayRect(g){ const n = trayPlaces(G.s), w = TRAY_PAD * 2 + TRAY_STEP * (n - 1) + TRAY_S + TRAY_CNT; return { x: W / 2 - w / 2, y: g.trayY, w, h: TRAY_H }; }
-function trayXY(k, g){ const r = trayRect(g); return { x: r.x + TRAY_PAD + TRAY_S / 2 + TRAY_STEP * k, y: r.y + r.h / 2, r: TRAY_S / 2 - 1 }; }
+function trayRect(g){ const n = trayPlaces(G.s), w = TRAY_PAD * 2 + TRAY_ICON + TRAY_STEP * (n - 1) + TRAY_S + TRAY_CNT; return { x: W / 2 - w / 2, y: g.trayY, w, h: TRAY_H }; }
+function trayXY(k, g){ const r = trayRect(g); return { x: r.x + TRAY_PAD + TRAY_ICON + TRAY_S / 2 + TRAY_STEP * k, y: r.y + r.h / 2, r: TRAY_S / 2 - 1 }; }
 // Плавный сдвиг по горизонтали: карточка едет к новому месту ORDER_SHIFT_MS, а не прыгает (время абсолютное).
 // Royal: сдвиг очереди заказов (17.11) — закрытый уезжает вверх с уменьшением, «следующий» растёт в полную карточку и встаёт на место,
 // новый «следующий» въезжает справа, «+N» подпрыгивает; отдача из лотка — после того, как карточка встала. Только вид (G.view/G.vq).
@@ -2446,12 +2493,12 @@ function drawTray(c, g, now, kind){
   const s = G.s, V = G.view, n = V.tray.length, r = trayRect(g);
   const flash = G.trayFlash && now >= G.trayFlash && now < G.trayFlash + 700, full = n >= s.cap, hot = full || flash || kind === 'over', warn = !hot && n === s.cap - 1;
   const beat = 0.5 + 0.5 * Math.sin(now / (kind === 'over' || flash ? 60 : hot ? 170 : 230));
-  if (ROYAL){                                       // royal: отдельный предмет — тёмно-синяя бархатная капсула в золотой кромке на кремовой панели
-    c.fillStyle = 'rgba(40,30,90,0.28)'; rr(c, r.x - 1, r.y + 3, r.w + 2, r.h + 1, r.h / 2); c.fill();
-    const tg = c.createLinearGradient(0, r.y, 0, r.y + r.h); tg.addColorStop(0, '#1b2468'); tg.addColorStop(1, '#2d3ca6');
+  if (ROYAL){                                       // royal (17.11, мокап D): утопленный карамельный паз чуть темнее панели, тонкая золотая кромка, корзинка слева — «запас»
+    const tg = c.createLinearGradient(0, r.y, 0, r.y + r.h); tg.addColorStop(0, '#e2c48c'); tg.addColorStop(1, '#efd9ab');
     c.fillStyle = tg; rr(c, r.x, r.y, r.w, r.h, r.h / 2); c.fill();
-    c.strokeStyle = '#e2b24a'; c.lineWidth = 3; rr(c, r.x, r.y, r.w, r.h, r.h / 2); c.stroke();
-    c.strokeStyle = 'rgba(255,240,190,0.55)'; c.lineWidth = 1; rr(c, r.x + 2.5, r.y + 2.5, r.w - 5, r.h - 5, r.h / 2 - 2.5); c.stroke();
+    c.save(); rr(c, r.x, r.y, r.w, r.h, r.h / 2); c.clip(); c.strokeStyle = 'rgba(110,70,20,0.35)'; c.lineWidth = 4; rr(c, r.x - 1, r.y + 1, r.w + 2, r.h + 4, r.h / 2); c.stroke(); c.restore();   // тень сверху: паз утоплен
+    c.strokeStyle = '#d9a43c'; c.lineWidth = 2; rr(c, r.x, r.y, r.w, r.h, r.h / 2); c.stroke();
+    drawBasket(c, r.x + TRAY_PAD + TRAY_ICON / 2 + 1, r.y + r.h / 2 + 1);
   } else {
   c.fillStyle = P.trayDeep; rr(c, r.x, r.y, r.w, r.h, 14); c.fill();
   c.fillStyle = P.trayBed; rr(c, r.x, r.y + 3, r.w, r.h - 3, 14); c.fill();          // тёмная кромка сверху — полоса «врезана» в панель
@@ -2461,10 +2508,9 @@ function drawTray(c, g, now, kind){
   if (hot || warn){ c.save(); c.globalAlpha = hot ? 1 : 0.6 + 0.4 * beat; c.strokeStyle = hot ? P.danger : P.tray; c.lineWidth = ROYAL ? 4 : 3; rr(c, r.x + 1.5, r.y + 1.5, r.w - 3, r.h - 3, ROYAL ? (r.h - 3) / 2 : 13); c.stroke(); c.restore(); }
   for (let k = 0; k < s.cap; k++){
     const p = trayXY(k, g);
-    if (ROYAL){                                     // royal: свободная лунка — глубокая тёмная яма с пунктиром внутри; занятая — крупная белая монетка
-      c.fillStyle = '#10164a'; c.beginPath(); c.arc(p.x, p.y, p.r + 1, 0, Math.PI * 2); c.fill();
-      c.strokeStyle = 'rgba(120,150,255,0.35)'; c.lineWidth = 1.5; c.beginPath(); c.arc(p.x, p.y, p.r + 1, Math.PI * 0.15, Math.PI * 0.85); c.stroke();   // отсвет по нижней кромке
-      if (k >= n){ c.save(); c.setLineDash([3, 3.5]); c.strokeStyle = 'rgba(140,180,255,0.6)'; c.lineWidth = 1.5; c.beginPath(); c.arc(p.x, p.y, p.r - 6, 0, Math.PI * 2); c.stroke(); c.restore(); }
+    if (ROYAL){                                     // royal: лунка — светлая утопленная ямка (тень по верхней кромке); занятая — белая монетка с фигурой
+      c.fillStyle = '#f6e8cb'; c.beginPath(); c.arc(p.x, p.y, p.r + 1, 0, Math.PI * 2); c.fill();
+      c.strokeStyle = 'rgba(130,85,25,0.38)'; c.lineWidth = 2.2; c.beginPath(); c.arc(p.x, p.y + 0.5, p.r, Math.PI * 1.08, Math.PI * 1.92); c.stroke();
     } else { c.fillStyle = P.traySlot; c.beginPath(); c.arc(p.x, p.y, p.r + 1, 0, Math.PI * 2); c.fill(); }
     if (k < n){ const it = V.tray[k], pop = Math.max(0, 1 - (now - it.t) / 300); drawChip(c, it.color, p.x, p.y, p.r, 1 + 0.35 * pop); }
     else if (k === n && kind === 'tray'){
@@ -2574,6 +2620,7 @@ function render(){
   }
   drawOrders(ctx, g, now, ghost && ghost.target && ghost.target.kind === 'order' ? ghost.target : null);
   drawTray(ctx, g, now, ghost ? ghost.kind : 'none');
+  if (ROYAL) drawTraySweep(ctx, g, now);
   // подсказка при бездействии: плитка с готовой стыковкой подмигивает в сторону пары (ход ядра, не догадка)
   let hintCell = -1, hintDir = 0, hintK = 0;
   const idle = now - G.lastInputT - CFG.IDLE_HINT_MS;
