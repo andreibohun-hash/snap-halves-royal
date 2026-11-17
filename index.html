@@ -169,6 +169,7 @@ html[data-skin=royal] #loading{background:#8fc0ee url('data:image/jpeg;base64,/9
 html[data-skin=royal] #load-title{-webkit-text-stroke:6px #4a2a10;paint-order:stroke fill;text-shadow:0 4px 0 #4a2a10}
 html[data-skin=royal] #load-bar{background:rgba(74,42,16,.45);border:2px solid #ffd35a}
 /* вин-скрин royal (17.11, реф Sand Pop): ночь с салютом (#sky внутри оверлея, под карточкой), потом карточка — лента, плашка, панель с лучами */
+html[data-skin=royal] #spot{position:absolute;inset:0;width:100%;height:100%;display:none;z-index:15;touch-action:none}
 html[data-skin=royal] #sky{position:absolute;inset:0;width:100%;height:100%;display:block;pointer-events:none;z-index:0}
 html[data-skin=royal] #overlay{transition:background .35s}
 html[data-skin=royal] #overlay.night{background:radial-gradient(120% 70% at 50% 100%,#2a1f5c 0%,#0e0b2a 55%,#05040f 100%)}
@@ -1376,7 +1377,7 @@ function startLevel(li){
   CFG.DEAL = RC.deal;                                               // раздача: умолчание ядра или deal_mode из удалённого конфига
     G.s = createState(li); G.s0 = G.s; G.hist = []; G.par = null;
   if (G.screen === 'settings') setPaused('settings', false);
-  G.ending = 0; G.drag = null; G.winT = 0; G.revived = false; G.ordX = {}; G.leaving = []; G.bestCombo = 0; G.traySweep = null; G.wantPrev = []; G.wantT = []; G.view = null; snapView(); clearFx(true); G.levelT0 = clock(); G.lastInputT = G.levelT0; G.hintFor = null;
+  G.ending = 0; G.drag = null; G.winT = 0; G.revived = false; G.ordX = {}; G.leaving = []; G.bestCombo = 0; G.traySweep = null; TUT.q = []; TUT.due = []; if (TUT.cur){ TUT.cur = null; setPaused('tut', false); if (TUT.cv) TUT.cv.style.display = 'none'; } tutQueue(TUT_START[li] || []); G.wantPrev = []; G.wantT = []; G.view = null; snapView(); clearFx(true); G.levelT0 = clock(); G.lastInputT = G.levelT0; G.hintFor = null;
   Audio.intro(); log('fx.start', 'intro'); G.fxOpen.push({ name: 'intro', t1: G.levelT0 + CFG.INTRO_MS + CFG.INTRO_STEP * 12 });
   G.cursor = G.s.grid.findIndex(c => c > 0);
   const spec = levelSpec(li);
@@ -1391,7 +1392,7 @@ function hud(){
   $('btn-undo').classList.toggle('dim', !G.hist.length);
   $('btn-gear').style.visibility = G.s ? '' : 'hidden';                        // в меню своя шестерёнка в карточке
   $('boosts').classList.toggle('hide', !(G.s && G.s.every > 0 && G.s.li + 1 >= CFG.BOOST_FROM));
-  $('boosts').classList.toggle('pulse', !!G.s && G.s.li + 1 === CFG.BOOST_FROM && G.s.moves === 0);
+  $('boosts').classList.toggle('pulse', !ROYAL && !!G.s && G.s.li + 1 === CFG.BOOST_FROM && G.s.moves === 0);   // royal: вместо «дыхания» — фокус на бустерах
 }
 
 // --- ход в оболочке: ядро считает, оболочка раскладывает эффекты по абсолютному времени ---
@@ -1485,7 +1486,8 @@ function animateSpawns(L, T, t0, served){
 // (золото, белый, сиреневый, цвета фигур), сверху сыплются блёстки, по центру — логотип. Тап после SKY_SKIP_MS — сразу к карточке.
 // Фаза 2: карточка поверх (.dusk), салют реже и тише за ней. Всё — формулы от абсолютного времени clock() (§4), на паузе стоит.
 const SKY = { on: false, t0: 0, card: 0, rockets: [], next: 0, cv: null, cv2: null };
-const SKY_MS = 2000, SKY_SKIP_MS = 500, SKY_COLS = ['#ffd35a', '#ffffff', '#c9a6ff', '#fff0a8'];
+const SKY_MS = 1200, SKY_SKIP_MS = 300,   // 17.11: карточка быстрее (было 2,0 с и 0,5 с)
+  SKY_COLS = ['#ffd35a', '#ffffff', '#c9a6ff', '#fff0a8'];
 function skyCanvas(){
   if (SKY.cv) return SKY.cv;
   const c = document.createElement('canvas'); c.id = 'sky'; $('overlay').insertBefore(c, $('card'));
@@ -1504,7 +1506,7 @@ function royalWin(){
   const now = clock(), c = skyCanvas(); goto('fireworks'); hud();
   SKY.on = true; SKY.t0 = now; SKY.card = 0; SKY.rockets = []; SKY.cv2 = null;
   const r = c.getBoundingClientRect(); SKY.w = r.width || 390; SKY.h = r.height || 800;
-  const n = REDUCED ? 3 : 8, span = REDUCED ? 600 : 1500;
+  const n = REDUCED ? 3 : 7, span = REDUCED ? 500 : 900;
   for (let k = 0; k < n; k++) skyRocket(k < 3 ? now - 560 + k * 170 : now + 120 + (k - 3) * span / (n - 3), false);   // первые три уже в небе — взрываются сразу
   SKY.next = now + 80 + span + 300;
   Audio.fanfare(0.15); buzz([20, 40, 20]); log('fx.start', 'fireworks', 'rockets=' + n);
@@ -1519,7 +1521,7 @@ function drawSky(){
   if (cvs.width !== cw || cvs.height !== ch){ cvs.width = cw; cvs.height = ch; }
   SKY.w = r.width; SKY.h = r.height;
   const c = cvs.getContext('2d'); c.setTransform(d, 0, 0, d, 0, 0); c.clearRect(0, 0, r.width, r.height);
-  if (G.screen === 'fireworks' && now - SKY.t0 >= (REDUCED ? 900 : SKY_MS)) royalCard();
+  if (G.screen === 'fireworks' && now - SKY.t0 >= (REDUCED ? 800 : SKY_MS)) royalCard();
   if (G.screen === 'win' && !REDUCED && now >= SKY.next){ skyRocket(now, true); SKY.next = now + 430 + (now % 260); }   // за карточкой — мягче и реже
   const K = 0.0028, Gv = 0.00012, soft = G.screen === 'win';
   SKY.rockets = SKY.rockets.filter(k => now < k.t0 + k.fly + k.life);
@@ -1733,7 +1735,7 @@ function scheduleDelivery(T, color, tL, evs){
   const g = geo(), ts = G.timeScale, s = G.s, delay = (t) => (t - clock()) / 1000;
   let tc = tL;
   if (T.kind === 'order') vAt(tL, () => fillSlot(T, tL));
-  else if (T.kind === 'tray'){ vAt(tL, () => { G.view.tray.push({ color, t: tL }); }); Audio.tray(delay(tL)); }
+  else if (T.kind === 'tray'){ vAt(tL, () => { G.view.tray.push({ color, t: tL }); }); Audio.tray(delay(tL)); tutAt('tray', tL); }   // туториал: первая лишняя фигура легла в лоток
   else if (T.kind === 'over'){ shakeAt(tL, 8); Audio.over(delay(tL)); G.trayFlash = tL; }
   for (const e of evs){
     if (e.type === 'done'){
@@ -1756,7 +1758,7 @@ function scheduleDelivery(T, color, tL, evs){
     } else if (e.type === 'untray'){
       const t0 = tc, t1 = tc + CFG.UNTRAY_MS / ts, T2 = { kind: 'order', slot: e.slot, k: e.k, id: e.id, n: s.queue[e.id].length };
       vAt(t0, () => { const i = Math.min(e.from, G.view.tray.length - 1); if (i >= 0) G.view.tray.splice(i, 1); G.flies.push({ color: e.color, from: e.from, T: T2, t0, t1 }); });
-      vAt(t1, () => fillSlot(T2, t1));
+      vAt(t1, () => fillSlot(T2, t1)); tutAt('untray', t1, e.slot);   // туториал: лоток отдал фигуру в заказ
       Audio.coin(delay(t1));
       tc = t1;
     }
@@ -2606,6 +2608,93 @@ function drawTray(c, g, now, kind){
   }
 }
 
+// ---------- Royal: туториальный фокус (17.11, Андрей: «затемняем всё и показываем кружком там, где надо») ----------
+// Экран затемняется (~65%), вырезано мягкое пятно с тонким светлым ободком и лёгким дыханием, рука-палец показывает на пятно. Текста нет.
+// Пока фокус открыт — игра на паузе (setPaused 'tut'), ввод вне пятна заблокирован; тап в любое место или TUT_MS — следующий шаг.
+// На шаге «пара» касание в пятне сразу отдаёт свайп полю. Каждый шаг — один раз (G.save.tut; сброс прогресса в DEV его обнуляет).
+const TUT_ON = ROYAL, TUT_MS = 1800, TUT_DIM = 0.65;
+const TUT_START = { 0: ['goal', 'pair'], 3: ['ghost'], 6: ['boosts'], 10: ['vert'], 15: ['honey'], 20: ['rainbow'], 25: ['crates'], 30: ['chain'], 35: ['timer'] };   // по индексу уровня
+const TUT = { q: [], cur: null, t0: 0, cv: null, slot: -1, due: [] };
+// Событийный шаг — по времени, а не через очередь вида: новый ход догоняет вид (snapView) и стёр бы его.
+function tutAt(id, t, slot){ if (TUT_ON && !tutSeen(id) && !TUT.due.some(d => d.id === id)) TUT.due.push({ id, t, slot: slot === undefined ? -1 : slot }); }
+function tutSeen(id){ return !!(G.save.tut && G.save.tut[id]); }
+function tutQueue(ids){ if (!TUT_ON) return; for (const id of ids) if (!tutSeen(id) && TUT.q.indexOf(id) < 0 && TUT.cur !== id) TUT.q.push(id); }
+function tutCanvas(){
+  if (TUT.cv) return TUT.cv;
+  const c = document.createElement('canvas'); c.id = 'spot'; $('frame').appendChild(c);
+  c.addEventListener('pointerdown', (e) => {
+    if (!TUT.cur) return; e.preventDefault();
+    const fr = $('frame').getBoundingClientRect(), x = e.clientX - fr.left, y = e.clientY - fr.top, h = TUT.hole, inside = h && x >= h.x && x <= h.x + h.w && y >= h.y && y <= h.y + h.h;
+    const id = TUT.cur; tutNext('tap');
+    if (inside && id === 'pair' && !TUT.cur){ try { cv.dispatchEvent(new PointerEvent('pointerdown', { clientX: e.clientX, clientY: e.clientY, pointerId: e.pointerId, pointerType: e.pointerType, isPrimary: true, bubbles: true })); } catch (err) {} }   // свайп по паре — сразу полю
+  });
+  return TUT.cv = c;
+}
+// Прямоугольник шага в координатах поля (виртуальные юниты холста) или DOM-элемента; null — показывать нечего (шаг пропускается).
+function tutRect(id){
+  const s = G.s, g = geo(), cs = g.cell; if (!s) return null;
+  const cellR = (i) => { const p = cellXY(i, g); return { x: p.x, y: p.y, w: cs, h: cs }; };
+  const firstCell = (f) => { for (let i = 0; i < s.grid.length; i++) if (f(i)) return cellR(i); return null; };
+  const union = (rs) => { rs = rs.filter(Boolean); if (!rs.length) return null; const x = Math.min(...rs.map(r => r.x)), y = Math.min(...rs.map(r => r.y)); return { x, y, w: Math.max(...rs.map(r => r.x + r.w)) - x, h: Math.max(...rs.map(r => r.y + r.h)) - y }; };
+  if (id === 'goal'){ const L = ordersLayout(g); return union([...L.cards, L.crate, L.next]); }
+  if (id === 'pair'){ const m = lessonMove(s); if (m < 0) return null; const pk = peekMove(s, m); return union([cellR(m >> 2), cellR(pk.to), pk.partner >= 0 ? cellR(pk.partner) : null]); }
+  if (id === 'ghost') return s.next && s.next.cell >= 0 ? cellR(s.next.cell) : null;
+  if (id === 'tray') return trayRect(g);
+  if (id === 'untray'){ const r = TUT.slot >= 0 ? ordersLayout(g).cards[TUT.slot] : null; return r || null; }
+  if (id === 'crates') return ordersLayout(g).crate;
+  if (id === 'vert') return firstCell(i => s.grid[i] > 0 && isVert(s.grid[i]));
+  if (id === 'honey') return firstCell(i => s.floor[i] === HONEY);
+  if (id === 'rainbow') return firstCell(i => s.grid[i] > 0 && colorOf(s.grid[i]) === RAINBOW);
+  if (id === 'chain') return firstCell(i => s.grid[i] > 0 && isChained(s.grid[i]));
+  if (id === 'timer') return firstCell(i => s.grid[i] > 0 && timerOf(s.grid[i]) > 0);
+  if (id === 'boosts') return { dom: $('boosts') };
+  return null;
+}
+function tutHole(id){                               // пятно в координатах #frame (CSS px)
+  const r = tutRect(id); if (!r) return null;
+  const fr = $('frame').getBoundingClientRect();
+  if (r.dom){ const bs = [...r.dom.querySelectorAll('.boost')].map(e => e.getBoundingClientRect()).filter(b => b.width); if (!bs.length) return null;   // только кнопки, без нижнего отступа панели
+    const x0 = Math.min(...bs.map(b => b.left)), y0 = Math.min(...bs.map(b => b.top)), x1 = Math.max(...bs.map(b => b.right)), y1 = Math.max(...bs.map(b => b.bottom));
+    return { x: x0 - fr.left - 12, y: y0 - fr.top - 14, w: x1 - x0 + 24, h: y1 - y0 + 24 }; }
+  const c = cv.getBoundingClientRect(), pad = 8;
+  return { x: c.left - fr.left + r.x * scale - pad, y: c.top - fr.top + r.y * scale - pad, w: r.w * scale + pad * 2, h: r.h * scale + pad * 2 };
+}
+function tutNext(why){
+  if (TUT.cur){ G.save.tut = G.save.tut || {}; G.save.tut[TUT.cur] = 1; save(); log('fx.end', 'tut', TUT.cur + ' ' + why); TUT.cur = null; }
+  while (TUT.q.length){
+    const id = TUT.q.shift(); if (tutSeen(id)) continue;
+    const h = tutHole(id); if (!h){ log('event', 'tut.skip', id); continue; }
+    TUT.cur = id; TUT.hole = h; TUT.t0 = performance.now(); setPaused('tut', true); tutCanvas().style.display = 'block'; tutCanvas().style.pointerEvents = 'auto';
+    if (id === 'boosts') $('boosts').classList.remove('pulse');
+    log('fx.start', 'tut', id); Audio.init(); return;
+  }
+  setPaused('tut', false); if (TUT.cv){ TUT.cv.style.display = 'none'; TUT.cv.style.pointerEvents = 'none'; }
+}
+// Запуск: шаги старта уровня — через 0,7 с после начала (плитки успели впрыгнуть); событийные (лоток, отдача) — из scheduleDelivery.
+function tutTick(){
+  if (!TUT_ON || !G.s || G.screen !== 'game') return;
+  for (const d of TUT.due.slice()) if (clock() >= d.t){ TUT.due.splice(TUT.due.indexOf(d), 1); if (d.slot >= 0) TUT.slot = d.slot; tutQueue([d.id]); }
+  if (!TUT.cur && TUT.q.length && !G.paused && clock() - G.levelT0 > 700 && !G.drag) tutNext('start');
+  if (TUT.cur && performance.now() - TUT.t0 > TUT_MS) tutNext('time');
+}
+function drawSpot(){
+  const c0 = TUT.cv; if (!c0 || !TUT.cur) return;
+  const fr = $('frame').getBoundingClientRect(), d = Math.min(window.devicePixelRatio || 1, 2), cw = Math.round(fr.width * d), ch = Math.round(fr.height * d);
+  if (c0.width !== cw || c0.height !== ch){ c0.width = cw; c0.height = ch; }
+  const c = c0.getContext('2d'), t = performance.now() - TUT.t0, h = TUT.hole, br = 3 * Math.sin(t / 380), inA = Math.min(1, t / 220);
+  c.setTransform(d, 0, 0, d, 0, 0); c.clearRect(0, 0, fr.width, fr.height);
+  c.fillStyle = 'rgba(10,14,40,' + (TUT_DIM * inA).toFixed(3) + ')'; c.fillRect(0, 0, fr.width, fr.height);
+  const x = h.x - br, y = h.y - br, w = h.w + br * 2, hh = h.h + br * 2, rad = Math.min(26, Math.min(w, hh) / 2);
+  c.save(); c.globalCompositeOperation = 'destination-out'; c.shadowColor = '#000'; c.shadowBlur = 16; c.fillStyle = '#000'; rr(c, x, y, w, hh, rad); c.fill(); c.restore();   // мягкое пятно
+  c.save(); c.globalAlpha = 0.85 * inA; c.strokeStyle = '#fff6d8'; c.lineWidth = 2.5; rr(c, x - 2, y - 2, w + 4, hh + 4, rad + 2); c.stroke(); c.restore();   // тонкий светлый ободок
+  if (TUT.cur === 'pair'){                         // рука показывает свайп по паре (как на уроке)
+    const m = lessonMove(G.s); if (m >= 0){ const g = geo(), a = cellXY(m >> 2, g), b = cellXY(peekMove(G.s, m).to, g), cr = cv.getBoundingClientRect();
+      const ax = cr.left - fr.left + (a.x + g.cell * 0.5) * scale, ay = cr.top - fr.top + (a.y + g.cell * 0.55) * scale; drawHand(c, ax, ay, (b.x - a.x) * scale, (b.y - a.y) * scale, t); }
+  } else {                                          // рука-палец указывает на пятно снизу (над экраном — сверху)
+    const below = h.y + h.h + 70 < fr.height, hx = h.x + h.w / 2 + 10, hy = below ? h.y + h.h + 4 + 4 * Math.sin(t / 260) : h.y - 4;
+    c.save(); if (!below){ c.translate(hx, hy); c.scale(1, -1); c.translate(-hx, -hy); } drawHand(c, hx, hy, 0, 0, 140); c.restore();
+  }
+}
 // Royal: статичный слой (поле и панель цели) рисуется один раз на отдельный холст #base под игровым и кэшируется,
 // пока не сменились размер экрана или поле — кадр игры его не перерисовывает.
 // v2 (17.11, мокап C): поле — светлое голубое, клетки без лунок, тонкая белая сетка, белая кромка с тонким золотом;
@@ -2868,7 +2957,7 @@ function render(){
 // --- цикл: rAF + watchdog setInterval; безопасно, потому что время абсолютное (§4). Кадр под try/catch. ---
 let lastFrame = 0, frameErrors = 0;
 function safeRender(){ try { render(); } catch (e) { frameErrors++; if (frameErrors < 5) console.error(e); log('event', 'frame.error', e && e.message); } }
-function frame(){ lastFrame = performance.now(); if (!G.paused){ if (!(ROYAL && (G.screen === 'fireworks' || G.screen === 'win'))) safeRender(); try { drawFx(); } catch (e) {} if (ROYAL) try { drawSky(); } catch (e) { log('event', 'frame.error', 'sky ' + (e && e.message)); } } requestAnimationFrame(frame); }
+function frame(){ lastFrame = performance.now(); if (TUT_ON){ try { tutTick(); drawSpot(); } catch (e) { log('event', 'frame.error', 'tut ' + (e && e.message)); } } if (!G.paused){ if (!(ROYAL && (G.screen === 'fireworks' || G.screen === 'win'))) safeRender(); try { drawFx(); } catch (e) {} if (ROYAL) try { drawSky(); } catch (e) { log('event', 'frame.error', 'sky ' + (e && e.message)); } } requestAnimationFrame(frame); }
 setInterval(() => { if (performance.now() - lastFrame > 120 && !G.paused) safeRender(); }, 40);
 
 // --- дебаг-хук (§6): состояние, любой экран, ходы, прогон времени, автоигра. Только DEV: в сборке для стора вырезан. ---
