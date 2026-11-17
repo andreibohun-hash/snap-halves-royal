@@ -336,6 +336,18 @@ const CFG = {
   SHAKE_PX: 4,         // амплитуда встряски экрана на «щёлк» (растёт с серией до SHAKE_MAX)
   SHAKE_MAX: 9,        // потолок встряски
   SHAKE_MS: 240,       // длительность встряски
+  // royal (17.11, Андрей: «шейк при сборке неприятный — давай сатисфайней и мягче»): экран не трясётся; отклик — в точке стыка
+  NUDGE_PX: 1.2,       // единственный общий толчок (закрытие заказа, победа): плавно вниз-вверх, без дрожи
+  NUDGE_MS: 120,
+  DOCK_SQUASH: 0.16,   // «чмок» половинок при встрече: сплющивание вдоль стыка / вытягивание поперёк
+  DOCK_SPRING: 0.24,   // целая фигура пружинит перед полётом (затухающее колебание)
+  RING_MS: 380,        // кольцо-волна из точки стыка
+  WAVE_PX: 2.5,        // соседние плитки качаются от волны (затухает за WAVE_MS, радиус WAVE_CELLS)
+  WAVE_MS: 340,
+  WAVE_CELLS: 2.2,
+  WOBBLE_PX: 4,        // «не влезла» / проигрыш по лотку: покачивается сам лоток
+  WOBBLE_MS: 420,
+  BUZZ_MS: 12,         // вибрация — один короткий мягкий импульс
   LAND_MS: 190,        // сплющивание плитки при остановке
   HIT_MS: 210,         // вздрагивание плитки/камня, в которые упёрлись
   TRAIL_N: 3,          // сколько призраков шлейфа за скользящей плиткой
@@ -1191,7 +1203,7 @@ const G = {
   save: Object.assign({ level: 0, muted: false, haptics: true, best: {}, unlockAll: false }, loadSave()),   // unlockAll — чит «открыть все уровни» (DEV); boost — запас бустеров (заводит hud)
   slide: null,                   // { code, from, to, t0, t1 } — скользящая плитка
   drops: [],                     // [{ code, cell, t0, t1 }] — проявляющиеся раздачи (обычная и те, что упали сами, когда ходить было нечем)
-  merges: [],                    // [{ aCell, bCell, aCode, bCode, vert, active, color, tShow, t0, t1, flyEnd, slot, target, combo }]
+  merges: [], waves: [],                    // [{ aCell, bCell, aCode, bCode, vert, active, color, tShow, t0, t1, flyEnd, slot, target, combo }]
   parts: [],                     // частицы { x, y, vx, vy, t0, life, color, r }
   wiggle: null,                  // { cell, dir, t0, t1 } — вздрагивание плитки (тап или упор)
   land: null,                    // { cell, dir, t0, t1 } — сплющивание плитки при остановке
@@ -1301,7 +1313,7 @@ const Audio = {
   win(){ this.tone(1047, 200, 'triangle', 0, 0.12); log('sound', 'win'); },
   lose(){ this.tone(330, 220, 'triangle', 0, 0.16, 220); this.tone(220, 360, 'triangle', 0.18, 0.16, 140); log('sound', 'lose'); },
 };
-function buzz(ms){ if (G.save.haptics === false) return; try { if (navigator.vibrate) navigator.vibrate(ms); } catch (e) {} }
+function buzz(ms){ if (G.save.haptics === false) return; if (ROYAL) ms = Array.isArray(ms) ? CFG.BUZZ_MS : Math.min(ms, CFG.BUZZ_MS + 3); /* royal: один мягкий импульс */ try { if (navigator.vibrate) navigator.vibrate(ms); } catch (e) {} }
 
 // --- экраны: DOM-оверлеи, любой открывается кодом (goto) и, в DEV, хешем (§6, §11) ---
 const $ = (id) => document.getElementById(id);
@@ -1470,7 +1482,7 @@ function clearFx(hard){
   G.fxOpen = G.fxOpen.filter(keep);
   G.merges = hard ? [] : G.merges.filter(M => now >= M.t0);
   G.slide = null; G.drops = []; G.wiggle = null; G.land = null; G.hit = null; G.ghosts = []; G.sweep = null;
-  if (hard){ G.parts = []; G.praise = []; G.shake = null; G.combo = 0; G.crateFly = []; G.trayFlash = 0; }
+  if (hard){ G.parts = []; G.praise = []; G.shake = null; G.combo = 0; G.crateFly = []; G.trayFlash = 0; G.waves = []; G.trayWob = 0; }
   G.fxUntil = G.fxOpen.reduce((m, f) => Math.max(m, f.t1), 0);
 }
 function startLevel(li){
@@ -1478,7 +1490,7 @@ function startLevel(li){
   CFG.DEAL = RC.deal;                                               // раздача: умолчание ядра или deal_mode из удалённого конфига
     G.s = createState(li); G.s0 = G.s; G.hist = []; G.par = null;
   if (G.screen === 'settings') setPaused('settings', false);
-  G.ending = 0; G.drag = null; G.winT = 0; G.revived = false; G.revives = 0; G.overColor = null; G.offerKey = ''; G.failKey = ''; G.ordX = {}; G.leaving = []; G.queued = null; G.bestCombo = 0; G.traySweep = null; TUT.q = []; TUT.due = []; if (TUT.cur){ TUT.cur = null; setPaused('tut', false); if (TUT.cv) TUT.cv.style.display = 'none'; } tutQueue(TUT_START[li] || []); G.wantPrev = []; G.wantT = []; G.view = null; snapView(); clearFx(true); G.levelT0 = clock(); G.lastInputT = G.levelT0; G.hintFor = null;
+  G.ending = 0; G.drag = null; G.winT = 0; G.revived = false; G.revives = 0; G.overColor = null; G.offerKey = ''; G.failKey = ''; G.ordX = {}; G.leaving = []; G.queued = null; G.winHoldK = 1; G.bestCombo = 0; G.traySweep = null; TUT.q = []; TUT.due = []; if (TUT.cur){ TUT.cur = null; setPaused('tut', false); if (TUT.cv) TUT.cv.style.display = 'none'; } tutQueue(TUT_START[li] || []); G.wantPrev = []; G.wantT = []; G.view = null; snapView(); clearFx(true); G.levelT0 = clock(); G.lastInputT = G.levelT0; G.hintFor = null;
   Audio.intro(); log('fx.start', 'intro'); G.fxOpen.push({ name: 'intro', t1: G.levelT0 + CFG.INTRO_MS + CFG.INTRO_STEP * 12 });
   G.cursor = G.s.grid.findIndex(c => c > 0);
   const spec = levelSpec(li);
@@ -1517,7 +1529,7 @@ function doMove(m){
 }
 function fxOpen(name, t1, info, ref){ G.fxOpen.push({ name, t1, ref }); log('fx.start', name, info); G.fxUntil = Math.max(G.fxUntil, t1); }
 const REDUCED = (() => { try { return matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) { return false; } })();
-function shakeAt(t0, amp){ if (REDUCED) return; if (!G.shake || G.shake.t1 < t0 || G.shake.amp < amp) G.shake = { t0, t1: t0 + CFG.SHAKE_MS / G.timeScale, amp }; }
+function shakeAt(t0, amp){ if (REDUCED || ROYAL) return; /* royal: экран не трясётся (см. nudgeAt, волна стыка, покачивание лотка) */ if (!G.shake || G.shake.t1 < t0 || G.shake.amp < amp) G.shake = { t0, t1: t0 + CFG.SHAKE_MS / G.timeScale, amp }; }
 function praise(text, x, y, t0, color, size){ G.praise.push({ text, x: Math.max(70, Math.min(W - 70, x)), y, t0, t1: t0 + CFG.PRAISE_MS / G.timeScale, color, size: size || 26 }); log('fx.start', 'praise', text); }
 const PRAISE = ['Snap!', 'Great!', 'Super!', 'Wow!', 'Amazing!'];
 // Частицы: dot — кружок, rect — вертящееся конфетти, star — искра, dust — пыль. Всё от сида, без Math.random.
@@ -1702,10 +1714,11 @@ function winRowsTick(now){
   }
 }
 function celebrate(t){
-  const hold = CFG.WIN_HOLD_MS / G.timeScale;
+  const fast = TUT_ON && (TUT.cur === 'untray' || TUT.q.indexOf('untray') >= 0 || TUT.due.some(d => d.id === 'untray'));   // 3-й: после фокуса «отдача из лотка» — к победе быстрее
+  const hold = CFG.WIN_HOLD_MS * (fast ? 0.35 : G.winHoldK || 1) / G.timeScale;
   G.winT = t;                                     // плитки на поле подпрыгивают волной (render), с краёв бьют пушки конфетти
   if (!ROYAL) cannons(t, 0.8);                    // royal: вместо конфетти — салют после (royalWin)
-  shakeAt(t, 5);
+  shakeAt(t, 5); nudgeAt(t);
   Audio.fanfare((t - clock()) / 1000);
   fxOpen('celebrate', t + hold, 'cannons');
 }
@@ -1783,7 +1796,8 @@ function addMerge(o){
   const toTray = target.kind === 'tray', over = target.kind === 'over';
   const text = magnet ? 'Magnet!' : o.kind === 'gift' ? 'Gift!' : rainbow && M.combo <= 1 ? 'Rainbow!' : M.combo <= 1 ? PRAISE[0] : PRAISE[Math.min(M.combo - 1, PRAISE.length - 1)] + ' ×' + M.combo;
   if (!over && !toTray) praise(text, cx, cy - g.cell * 0.65, tp, P.colors[col], 24 + power * 3);   // в лоток и «не влезла» — без слов: это видно по полёту и по лотку
-  shakeAt(tp, Math.min(CFG.SHAKE_MAX, CFG.SHAKE_PX + (M.combo - 1) * 1.5));
+  shakeAt(tp, Math.min(CFG.SHAKE_MAX, CFG.SHAKE_PX + (M.combo - 1) * 1.5));   // classic; royal — волна от стыка
+  waveAt(tp, cx, cy, power);
   // фигура долетела до заказа или лотка: звон и искры
   if (target.kind === 'order' || toTray){
     const sp = targetXY(target, g);
@@ -1838,14 +1852,14 @@ function scheduleDelivery(T, color, tL, evs){
   let tc = tL;
   if (T.kind === 'order') vAt(tL, () => fillSlot(T, tL));
   else if (T.kind === 'tray'){ vAt(tL, () => { G.view.tray.push({ color, t: tL }); }); Audio.tray(delay(tL)); tutAt('tray', tL); }   // туториал: первая лишняя фигура легла в лоток
-  else if (T.kind === 'over'){ shakeAt(tL, 8); Audio.over(delay(tL)); G.trayFlash = tL; G.overColor = color; G.overT = tL; }   // royal: лишняя фигура остаётся висеть у лотка с красным крестом, пока идёт проигрыш
+  else if (T.kind === 'over'){ shakeAt(tL, 8); G.trayWob = tL; Audio.over(delay(tL)); G.trayFlash = tL; G.overColor = color; G.overT = tL; }   // royal: лишняя фигура остаётся висеть у лотка с красным крестом, пока идёт проигрыш
   for (const e of evs){
     if (e.type === 'done'){
       tc += 90 / ts; const t = tc, r = cardRect(e.slot, g), cx = r.x + r.w / 2, cy = r.y + r.h / 2;
       vAt(t, () => { const c = G.view.cards[e.slot]; if (c && c.id === e.id) c.done = t; });
       burst(12, cx, cy, t, { type: 'star', color: 2, v: 0.16, life: 520, r: 6, g: 0 });
       burst(12, cx, cy, t, { type: 'rect', colors: [3, -2, 2], v: 0.2, vy: -0.1, life: 700, r: 3.5, g: 0.0005 });
-      Audio.order(delay(t));
+      Audio.order(delay(t)); nudgeAt(t);   // royal: заказ закрыт — единственный мягкий толчок
       tc += CFG.ORDER_DONE_MS / ts; const t2 = tc;
       vAt(t2, () => { const c = G.view.cards[e.slot]; if (!(c && c.id === e.id)) return;
         if (ROYAL){ const gg = geo(), L = ordersLayout(gg), r = L.cards[e.slot]; if (r) G.leaving.push({ card: c, x: easeX('c' + c.id, r.x, t2), y: r.y, w: r.w, h: r.h, f: L.f, t: t2 }); }   // royal: уезжает, а не исчезает
@@ -2573,8 +2587,22 @@ function drawBackdrop(c, now){
   }
   c.restore();
 }
+// Royal: единственный общий толчок — плавный «кивок» вниз и обратно (NUDGE_PX за NUDGE_MS), только на закрытии заказа и победе.
+function nudgeAt(t0){ if (REDUCED || !ROYAL) return; G.shake = { t0, t1: t0 + CFG.NUDGE_MS / G.timeScale, amp: CFG.NUDGE_PX, soft: true }; }
+// Royal: волна стыка — кольцо из точки, соседние плитки качаются от неё (смещение от центра волны, затухает).
+function waveAt(t0, x, y, power){ if (!ROYAL || REDUCED) return; G.waves.push({ t0, x, y, power }); }
+function waveOffset(x, y, now, cs){
+  let ox = 0, oy = 0;
+  for (const w of G.waves){ const dt = now - w.t0, T = CFG.WAVE_MS / G.timeScale; if (dt < 0 || dt >= T) continue;
+    const dx = x - w.x, dy = y - w.y, d = Math.hypot(dx, dy) / cs; if (d < 0.4 || d > CFG.WAVE_CELLS) continue;
+    const reach = d / CFG.WAVE_CELLS, u = dt / T - reach * 0.35; if (u <= 0) continue;          // волна доходит до дальних позже
+    const a = CFG.WAVE_PX * (1 + 0.15 * (w.power - 1)) * (1 - reach) * Math.sin(Math.min(1, u) * Math.PI * 2) * (1 - Math.min(1, u));
+    ox += dx / (d * cs) * a; oy += dy / (d * cs) * a; }
+  return { x: ox, y: oy };
+}
 function shakeOffset(now){
   const S = G.shake; if (!S || now < S.t0 || now >= S.t1) return { x: 0, y: 0 };
+  if (S.soft){ const u = (now - S.t0) / (S.t1 - S.t0); return { x: 0, y: S.amp * Math.sin(u * Math.PI) }; }   // плавно, без дрожи
   const u = (now - S.t0) / (S.t1 - S.t0), a = S.amp * (1 - u) * (1 - u);
   return { x: Math.sin(now * 0.11) * a, y: Math.cos(now * 0.137) * a * 0.7 };
 }
@@ -2871,6 +2899,7 @@ function drawTray(c, g, now, kind){
 // Пока фокус открыт — игра на паузе (setPaused 'tut'), ввод вне пятна заблокирован; тап в любое место или TUT_MS — следующий шаг.
 // На шаге «пара» касание в пятне сразу отдаёт свайп полю. Каждый шаг — один раз (G.save.tut; сброс прогресса в DEV его обнуляет).
 const TUT_ON = ROYAL, TUT_MS = 1800, TUT_DIM = 0.65;
+const TUT_DUR = { untray: 900 };   // 17.11 (Андрей): фокус «лоток отдал фигуру в заказ» на 3-м — вдвое короче, и праздник после него тоже (G.winHoldK)
 const TUT_START = { 0: ['goal', 'pair'], 3: ['ghost'], 6: ['boosts'], 10: ['vert'], 15: ['honey'], 20: ['rainbow'], 25: ['crates'], 30: ['chain'], 35: ['timer'] };   // по индексу уровня
 const TUT = { q: [], cur: null, t0: 0, cv: null, slot: -1, due: [] };
 // Событийный шаг — по времени, а не через очередь вида: новый ход догоняет вид (snapView) и стёр бы его.
@@ -2929,6 +2958,7 @@ function tutNext(why){
     const h = tutHole(id); if (!h){ log('event', 'tut.skip', id); continue; }
     TUT.cur = id; TUT.hole = h; TUT.t0 = performance.now(); setPaused('tut', true); tutCanvas().style.display = 'block'; tutCanvas().style.pointerEvents = 'auto';
     if (id === 'boosts') $('boosts').classList.remove('pulse');
+    if (id === 'untray') G.winHoldK = 0.5;            // после этого фокуса до победы — вдвое быстрее
     log('fx.start', 'tut', id); Audio.init(); return;
   }
   setPaused('tut', false); if (TUT.cv){ TUT.cv.style.display = 'none'; TUT.cv.style.pointerEvents = 'none'; }
@@ -2938,7 +2968,7 @@ function tutTick(){
   if (!TUT_ON || !G.s || G.screen !== 'game') return;
   for (const d of TUT.due.slice()) if (clock() >= d.t){ TUT.due.splice(TUT.due.indexOf(d), 1); if (d.slot >= 0) TUT.slot = d.slot; tutQueue([d.id]); }
   if (!TUT.cur && TUT.q.length && !G.paused && clock() - G.levelT0 > 700 && !G.drag) tutNext('start');
-  if (TUT.cur && performance.now() - TUT.t0 > TUT_MS) tutNext('time');
+  if (TUT.cur && performance.now() - TUT.t0 > (TUT_DUR[TUT.cur] || TUT_MS)) tutNext('time');
 }
 function drawSpot(){
   const c0 = TUT.cv; if (!c0 || !TUT.cur) return;
@@ -3027,7 +3057,10 @@ function render(){
     }
   }
   drawOrders(ctx, g, now, ghost && ghost.target && ghost.target.kind === 'order' ? ghost.target : null);
+  const wob = ROYAL && !REDUCED && G.trayWob && now >= G.trayWob && now < G.trayWob + CFG.WOBBLE_MS / G.timeScale ? (() => { const u = (now - G.trayWob) / (CFG.WOBBLE_MS / G.timeScale); return CFG.WOBBLE_PX * Math.sin(u * Math.PI * 4) * (1 - u); })() : 0;
+  if (wob){ ctx.save(); ctx.translate(wob, 0); }   // royal: «не влезла» — покачивается лоток, а не экран
   drawTray(ctx, g, now, ghost ? ghost.kind : 'none');
+  if (wob) ctx.restore();
   if (ROYAL) drawTraySweep(ctx, g, now);
   // подсказка при бездействии: плитка с готовой стыковкой подмигивает в сторону пары (ход ядра, не догадка)
   let hintCell = -1, hintDir = 0, hintK = 0;
@@ -3066,6 +3099,7 @@ function render(){
     if (gh && (gh.kind === 'stone' || gh.kind === 'piece')) c = gh.code;
     if (!c || skip.has(i)) continue;
     let { x, y } = cellXY(i, g);
+    if (ROYAL && G.waves.length){ const o = waveOffset(x + cs / 2, y + cs / 2, now, cs); x += o.x; y += o.y; }   // royal: соседи качаются от волны стыка
     if (G.hit && G.hit.cell === i && now >= G.hit.t0 && now < G.hit.t1){      // во что упёрлись — вздрагивает от удара
       const v = (now - G.hit.t0) / (G.hit.t1 - G.hit.t0), k = Math.sin(v * Math.PI) * (1 - v) * cs * 0.09;
       x += DIRS[G.hit.dir][0] * k; y += DIRS[G.hit.dir][1] * k;
@@ -3161,7 +3195,29 @@ function render(){
     if (now < M.t0 || now >= M.flyEnd) continue;
     const a = cellXY(M.aCell, g), J = mergeJoint(M, g), edgeX = J.x, cy = J.y, R = cs * HALF_R;
     const u = (now - M.t0) / (M.t1 - M.t0);
-    if (u < 0.45 && !M.magnet){
+    if (ROYAL && G.waves.length) G.waves = G.waves.filter(w => now < w.t0 + CFG.WAVE_MS / G.timeScale);
+    if (u < 0.45 && !M.magnet && ROYAL){                // royal: половинки сходятся с перелётом и «чмоком» (squash & stretch вокруг стыка)
+      const v = backOut(u / 0.45), gap = cs * 0.06 * (1 - v), sq = REDUCED ? 0 : CFG.DOCK_SQUASH * Math.max(0, Math.sin(Math.max(0, (u / 0.45 - 0.55) / 0.45) * Math.PI));
+      ctx.save(); ctx.translate(J.x, J.y); if (M.vert) ctx.scale(1 + sq, 1 - sq); else ctx.scale(1 - sq, 1 + sq); ctx.translate(-J.x, -J.y);
+      ctx.globalAlpha = 1 - v * 0.7; ctx.fillStyle = P.tile;
+      if (M.vert) rr(ctx, a.x + cs * 0.06, a.y + cs * 0.06 + v * cs * 0.3, cs * 0.88, cs * 1.88 - v * cs * 0.6, cs * 0.2);
+      else rr(ctx, a.x + cs * 0.06 + v * cs * 0.3, a.y + cs * 0.06, cs * 1.88 - v * cs * 0.6, cs * 0.88, cs * 0.2);
+      ctx.fill(); ctx.globalAlpha = 1;
+      if (M.vert){ drawHalf(ctx, M.aCode, J.x, J.y - gap, R, a.x, a.y, cs, cs * 2); drawHalf(ctx, M.bCode, J.x, J.y + gap, R, a.x, a.y, cs, cs * 2); }
+      else { drawHalf(ctx, M.aCode, J.x - gap, J.y, R, a.x, a.y, cs * 2, cs); drawHalf(ctx, M.bCode, J.x + gap, J.y, R, a.x, a.y, cs * 2, cs); }
+      ctx.restore();
+    } else if (u < 1 && ROYAL){                        // royal: вспышка и кольцо-волна в точке стыка, целое пружинит (затухающее колебание); серия — ярче, без тряски
+      const v = M.magnet ? u : (u - 0.45) / 0.55, pw = Math.min(4, M.combo), t = v * (M.t1 - M.t0) * 0.55;
+      const spring = REDUCED ? 1 : 1 + CFG.DOCK_SPRING * (1 + 0.1 * (pw - 1)) * Math.exp(-t / 90) * Math.sin(t / 34 + 0.6);
+      const rr2 = (now - (M.t0 + (M.t1 - M.t0) * 0.45)) / (CFG.RING_MS / G.timeScale);
+      if (rr2 >= 0 && rr2 < 1){ ctx.save(); ctx.globalAlpha = (1 - rr2) * (0.7 + 0.08 * pw); ctx.strokeStyle = '#ffffff'; ctx.lineWidth = (5 + pw) * (1 - rr2) + 1;
+        ctx.beginPath(); ctx.arc(edgeX, cy, R * (0.7 + 1.5 * easeIO(rr2)), 0, Math.PI * 2); ctx.stroke();
+        if (pw >= 2){ ctx.globalAlpha *= 0.6; ctx.strokeStyle = P.colors[M.color] || '#fff'; ctx.lineWidth *= 0.6; ctx.beginPath(); ctx.arc(edgeX, cy, R * (0.5 + 2.1 * easeIO(rr2)), 0, Math.PI * 2); ctx.stroke(); }
+        ctx.restore(); }
+      if (v < 0.35){ ctx.save(); const fa = (1 - v / 0.35) * (0.55 + 0.1 * pw), fg = ctx.createRadialGradient(edgeX, cy, 0, edgeX, cy, R * 1.4); fg.addColorStop(0, 'rgba(255,255,255,' + fa.toFixed(3) + ')'); fg.addColorStop(1, 'rgba(255,255,255,0)'); ctx.fillStyle = fg; ctx.beginPath(); ctx.arc(edgeX, cy, R * 1.4, 0, Math.PI * 2); ctx.fill(); ctx.restore(); }   // вспышка
+      drawBurst(ctx, edgeX, cy, R, M.color, v, pw);
+      ctx.save(); ctx.translate(edgeX, cy); drawShape(ctx, M.color, 0, 0, R * spring); ctx.restore();
+    } else if (u < 0.45 && !M.magnet){
       const v = backOut(u / 0.45), gap = cs * 0.06 * (1 - v);
       ctx.save(); ctx.globalAlpha = 1 - v * 0.7; ctx.fillStyle = P.tile;
       if (M.vert) rr(ctx, a.x + cs * 0.06, a.y + cs * 0.06 + v * cs * 0.3, cs * 0.88, cs * 1.88 - v * cs * 0.6, cs * 0.2);
