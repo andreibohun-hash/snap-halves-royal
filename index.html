@@ -176,14 +176,14 @@ html[data-skin=royal] #overlay.dusk{background:radial-gradient(120% 80% at 50% 6
 html[data-skin=royal] .card{z-index:1} html[data-skin=royal] .card.rw-hide{display:none}
 html[data-skin=royal] .card.rwin{background:none;border:0;box-shadow:none;padding:0;max-width:330px;overflow:visible;animation:rwIn .45s cubic-bezier(.25,1.6,.5,1) both}
 @keyframes rwIn{from{transform:scale(.6)}to{transform:scale(1)}}
-html[data-skin=royal] .rw-box{position:relative;margin-top:34px;padding:46px 16px 22px;border-radius:28px;background:linear-gradient(180deg,#3d5cd0,#1f2f8e);border:4px solid #ffd35a;
+html[data-skin=royal] .rw-box{position:relative;margin-top:38px;padding:48px 16px 22px;border-radius:28px;background:linear-gradient(180deg,#3d5cd0,#1f2f8e);border:4px solid #ffd35a;
   box-shadow:0 0 0 3px #a8701c,0 10px 0 3px #6b4310,0 22px 36px rgba(0,0,0,.5)}
-html[data-skin=royal] .rw-ribbon{position:absolute;left:50%;top:-30px;transform:translateX(-50%);width:292px;height:62px;display:flex;align-items:center;justify-content:center;
-  background:linear-gradient(180deg,#e2404f,#a81d34);border:3px solid #ffd35a;border-radius:16px;box-shadow:0 5px 0 #6e1020,0 8px 14px rgba(0,0,0,.35);animation:rwRib .55s .1s cubic-bezier(.25,1.8,.5,1) both}
-html[data-skin=royal] .rw-ribbon::before,html[data-skin=royal] .rw-ribbon::after{content:'';position:absolute;top:14px;width:30px;height:44px;background:#8c1428;z-index:-1;border:3px solid #d9a23a}
-html[data-skin=royal] .rw-ribbon::before{left:-22px;clip-path:polygon(0 0,100% 0,100% 100%,0 100%,40% 50%)} html[data-skin=royal] .rw-ribbon::after{right:-22px;clip-path:polygon(0 0,100% 0,60% 50%,100% 100%,0 100%)}
-html[data-skin=royal] .rw-ribbon span{font-size:36px;font-weight:1000;letter-spacing:.01em;color:#ffe14d;-webkit-text-stroke:6px #6b2a08;paint-order:stroke fill;text-shadow:0 4px 0 #5a1f05;line-height:1}
-@keyframes rwRib{from{transform:translateX(-50%) scale(.3) rotate(-8deg)}to{transform:translateX(-50%) scale(1) rotate(0)}}
+html[data-skin=royal] .rw-ribbon{position:absolute;left:-24px;right:-24px;top:-36px;animation:rwRib .55s .1s cubic-bezier(.25,1.8,.5,1) both}   /* лента шире карточки симметрично: хвосты с ласточкиным вырезом, тёмный загиб под краем (SVG) */
+@media (max-width:380px){ html[data-skin=royal] .rw-ribbon{left:-15px;right:-15px} html[data-skin=royal] .rw-ribbon span{font-size:31px} }   /* 360 px: хвосты не уходят за край экрана */
+html[data-skin=royal] .rw-ribbon svg{display:block;width:100%;height:auto;filter:drop-shadow(0 5px 3px rgba(40,0,10,.45))}
+html[data-skin=royal] .rw-ribbon span{position:absolute;left:12%;right:12%;top:2.6%;height:70.5%;display:flex;align-items:center;justify-content:center;
+  font-size:34px;font-weight:1000;letter-spacing:.01em;color:#ffe14d;-webkit-text-stroke:6px #6b2a08;paint-order:stroke fill;text-shadow:0 4px 0 #5a1f05;line-height:1;white-space:nowrap}
+@keyframes rwRib{from{transform:scale(.3) rotate(-8deg)}to{transform:scale(1) rotate(0)}}
 html[data-skin=royal] .rw-level{display:inline-block;margin:0 0 12px;padding:4px 22px;border-radius:12px;background:#1a2470;border:2px solid #ffd35a;font-size:19px;font-weight:1000;color:#fff;box-shadow:inset 0 2px 0 rgba(0,0,0,.25)}
 html[data-skin=royal] .rw-panel{position:relative;height:200px;margin:0 0 20px;border-radius:20px;overflow:hidden;background:radial-gradient(circle at 50% 58%,#7d9cff 0%,#4560e0 38%,#24339a 80%);
   box-shadow:inset 0 4px 10px rgba(0,0,30,.45),0 0 0 2px rgba(255,211,90,.6)}
@@ -1224,8 +1224,11 @@ function goto(screen, payload){
       • Boosters: Undo takes back a move, Magnet snaps a pair for an order, Broom sweeps the fullest row.</p><button class="btn g" data-act="back">Got it</button>`;
   if (screen === 'fireworks'){ ov.classList.add('night'); card.className = 'card rw-hide'; card.innerHTML = ''; return; }   // royal: фаза салюта — карточки нет, тап после 0,5 с — к карточке
   if (screen === 'win' && ROYAL){                         // royal: лента WELL DONE!, плашка уровня, панель с лучами — половинки защёлкиваются в целую; Continue = Next
-    ov.classList.add('dusk'); card.className = 'card rwin';
-    card.innerHTML = `<div class="rw-box"><div class="rw-ribbon"><span>WELL DONE!</span></div><div class="rw-level">Level ${G.s ? G.s.li + 1 : ''}</div>
+    ov.classList.add('night'); card.className = 'card rwin';             // 17.11: карточка — на том же ночном небе с салютом, уровня под ней не видно
+    card.innerHTML = `<div class="rw-box"><div class="rw-ribbon"><svg viewBox="0 0 340 78" aria-hidden="true"><defs><linearGradient id="rwb" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ff6470"/><stop offset=".55" stop-color="#e2324a"/><stop offset="1" stop-color="#b81d36"/></linearGradient></defs>
+      <path d="M0 18H48V70H0L15 44Z" fill="#a51a31" stroke="#d9a23a" stroke-width="2.5" stroke-linejoin="round"/><path d="M340 18H292V70H340L325 44Z" fill="#a51a31" stroke="#d9a23a" stroke-width="2.5" stroke-linejoin="round"/>
+      <path d="M31 57H48V70Z" fill="#5c0b19"/><path d="M309 57H292V70Z" fill="#5c0b19"/>
+      <rect x="31" y="2" width="278" height="55" rx="7" fill="url(#rwb)" stroke="#ffd35a" stroke-width="3"/><rect x="38" y="7" width="264" height="9" rx="4.5" fill="#fff" opacity=".22"/></svg><span>WELL DONE!</span></div><div class="rw-level">Level ${G.s ? G.s.li + 1 : ''}</div>
       <div class="rw-panel"><div class="rw-rays"></div><div class="rw-next">Next level</div><canvas class="rw-snap" width="300" height="300"></canvas></div>
       <div class="row"><button class="btn g big late" data-act="next">Continue</button></div></div>`;
     SKY.card = clock(); SKY.cv2 = card.querySelector('.rw-snap'); SKY.snapped = false; SKY.on = true; skyCanvas();
@@ -1457,10 +1460,10 @@ function skyCanvas(){
   $('overlay').addEventListener('pointerdown', () => { if (G.screen === 'fireworks' && clock() - SKY.t0 > SKY_SKIP_MS){ log('input', 'skip', 'fireworks'); royalCard(); } });
   return SKY.cv = c;
 }
-function skyRocket(t, soft){                        // ракета: старт снизу, вершина, взрыв; искры — заранее по сиду
+function skyRocket(t, soft){                        // ракета: старт снизу, вершина, взрыв; искры — заранее по сиду. Мягкие (за карточкой) рвутся над ней и под ней — их видно
   const q = mulberry32(Math.round(t * 7) % 100000 + 11), w = SKY.w, h = SKY.h, col = q() < 0.55 ? SKY_COLS[Math.floor(q() * 4)] : P.colors[Math.floor(q() * 5)];
-  const r = { t0: t, fly: 620 + q() * 260, x0: w * (0.12 + q() * 0.76), x1: 0, y1: h * (soft ? 0.12 + q() * 0.3 : 0.1 + q() * 0.38), col, col2: q() < 0.4 ? '#ffffff' : col,
-    n: REDUCED ? 30 : soft ? 44 : 84, sp: (soft ? 0.3 : 0.42) + q() * 0.16, life: 1300 + q() * 500, soft, seed: Math.floor(q() * 1e6) };
+  const r = { t0: t, fly: 620 + q() * 260, x0: w * (0.12 + q() * 0.76), x1: 0, y1: h * (soft ? (q() < 0.6 ? 0.05 + q() * 0.12 : 0.8 + q() * 0.1) : 0.1 + q() * 0.38), col, col2: q() < 0.4 ? '#ffffff' : col,
+    n: REDUCED ? 30 : soft ? 64 : 84, sp: (soft ? 0.36 : 0.42) + q() * 0.16, life: 1300 + q() * 500, soft, seed: Math.floor(q() * 1e6) };
   r.x1 = r.x0 + (q() - 0.5) * w * 0.12;
   SKY.rockets.push(r);
   const d = (t - clock()) / 1000; Audio.rocket(d, soft ? 0.4 : 1); Audio.boom(d + r.fly / 1000, soft ? 0.35 : 1);
@@ -1485,7 +1488,7 @@ function drawSky(){
   SKY.w = r.width; SKY.h = r.height;
   const c = cvs.getContext('2d'); c.setTransform(d, 0, 0, d, 0, 0); c.clearRect(0, 0, r.width, r.height);
   if (G.screen === 'fireworks' && now - SKY.t0 >= (REDUCED ? 900 : SKY_MS)) royalCard();
-  if (G.screen === 'win' && !REDUCED && now >= SKY.next){ skyRocket(now, true); SKY.next = now + 650 + (now % 400); }   // за карточкой — мягче и реже
+  if (G.screen === 'win' && !REDUCED && now >= SKY.next){ skyRocket(now, true); SKY.next = now + 430 + (now % 260); }   // за карточкой — мягче и реже
   const K = 0.0028, Gv = 0.00012, soft = G.screen === 'win';
   SKY.rockets = SKY.rockets.filter(k => now < k.t0 + k.fly + k.life);
   c.save(); c.globalCompositeOperation = 'lighter'; c.lineCap = 'round';
@@ -1499,7 +1502,7 @@ function drawSky(){
       c.fillStyle = '#fff6d8'; c.beginPath(); c.arc(a[0], a[1], 2.2, 0, Math.PI * 2); c.fill();
       continue;
     }
-    const bt = dt - k.fly, life = k.life, fade = Math.max(0, 1 - bt / life), al = (k.soft ? 0.6 : 1) * (soft && !k.soft ? 0.6 : 1);
+    const bt = dt - k.fly, life = k.life, fade = Math.max(0, 1 - bt / life), al = (k.soft ? 0.85 : 1) * (soft && !k.soft ? 0.8 : 1);
     if (bt < 600){ const gr = 55 + bt * 0.07, ga = (1 - bt / 600) * 0.24 * al, gg = c.createRadialGradient(k.x1, k.y1, 0, k.x1, k.y1, gr); gg.addColorStop(0, k.col); gg.addColorStop(1, 'rgba(0,0,0,0)');
       c.globalAlpha = ga; c.fillStyle = gg; c.beginPath(); c.arc(k.x1, k.y1, gr, 0, Math.PI * 2); c.fill(); }   // мягкое свечение шара
     if (bt < 160 && !REDUCED){ c.globalAlpha = (1 - bt / 160) * 0.55 * al; const fg = c.createRadialGradient(k.x1, k.y1, 0, k.x1, k.y1, 60); fg.addColorStop(0, '#ffffff'); fg.addColorStop(1, 'rgba(255,255,255,0)'); c.fillStyle = fg; c.beginPath(); c.arc(k.x1, k.y1, 60, 0, Math.PI * 2); c.fill(); }   // вспышка
@@ -1524,9 +1527,9 @@ function drawSky(){
     c.globalAlpha = 1;
   }
   const im = ART.logo;                               // логотип по центру: впрыгивает, при карточке гаснет
-  if (im && (G.screen === 'fireworks' || (SKY.card && now - SKY.card < 260))){
-    const u = Math.min(1, (now - SKY.t0 - 120) / 420), k = u <= 0 ? 0 : backOut(u), out = SKY.card ? 1 - (now - SKY.card) / 260 : 1;
-    if (k > 0){ const w = Math.min(SKY.w * 0.8, 340) * k, h = w * im.height / im.width; c.globalAlpha = Math.max(0, out); c.drawImage(im, SKY.w / 2 - w / 2, SKY.h * 0.36 - h / 2, w, h); c.globalAlpha = 1; }
+  if (im && (G.screen === 'fireworks' || (SKY.card && now - SKY.card < 450))){
+    const u = Math.min(1, (now - SKY.t0 - 120) / 420), k = u <= 0 ? 0 : backOut(u), v = SKY.card ? easeIO((now - SKY.card) / 450) : 0;   // при карточке логотип уезжает вверх и гаснет — не спорит с лентой
+    if (k > 0){ const w = Math.min(SKY.w * 0.8, 340) * k * (1 - 0.25 * v), h = w * im.height / im.width; c.globalAlpha = Math.max(0, 1 - v); c.drawImage(im, SKY.w / 2 - w / 2, SKY.h * 0.36 - h / 2 - v * SKY.h * 0.22, w, h); c.globalAlpha = 1; }
   }
   if (G.screen === 'win' && SKY.cv2) drawWinSnap(SKY.cv2, now - SKY.card);
 }
@@ -2745,7 +2748,7 @@ function render(){
 // --- цикл: rAF + watchdog setInterval; безопасно, потому что время абсолютное (§4). Кадр под try/catch. ---
 let lastFrame = 0, frameErrors = 0;
 function safeRender(){ try { render(); } catch (e) { frameErrors++; if (frameErrors < 5) console.error(e); log('event', 'frame.error', e && e.message); } }
-function frame(){ lastFrame = performance.now(); if (!G.paused){ if (!(ROYAL && G.screen === 'fireworks')) safeRender(); try { drawFx(); } catch (e) {} if (ROYAL) try { drawSky(); } catch (e) { log('event', 'frame.error', 'sky ' + (e && e.message)); } } requestAnimationFrame(frame); }
+function frame(){ lastFrame = performance.now(); if (!G.paused){ if (!(ROYAL && (G.screen === 'fireworks' || G.screen === 'win'))) safeRender(); try { drawFx(); } catch (e) {} if (ROYAL) try { drawSky(); } catch (e) { log('event', 'frame.error', 'sky ' + (e && e.message)); } } requestAnimationFrame(frame); }
 setInterval(() => { if (performance.now() - lastFrame > 120 && !G.paused) safeRender(); }, 40);
 
 // --- дебаг-хук (§6): состояние, любой экран, ходы, прогон времени, автоигра. Только DEV: в сборке для стора вырезан. ---
