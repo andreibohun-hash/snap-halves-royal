@@ -321,7 +321,13 @@ const CFG = {
   WANT: 0.5,           // доля раздач, цвет которых берётся из открытых заказов (остальные — любой цвет уровня)
   DEAL: 'miss',        // когда падает раздача: 'miss' — только после хода без стыковки (v0.8, решение Андрея); 'each' — после каждого хода; 'second' — через ход
   TRAY_PLUS: 0,        // добавка к лотку на всех уровнях (удалённый ключ tray_cap − TRAY_CAP; только ≥ 0 — только легче)
-  WANT_BONUS: 0,       // сдвиг доли нужных раздач want на уровнях с раздачей (удалённый ключ want_bonus; только ≥ 0 — только легче)
+  WANT_BONUS: 0,       // сдвиг доли нужных раздач want на уровнях с раздачей (удалённый ключ want_bonus, −0,5…0,5)
+  // --- сложность по уровням (18.11, Андрей: «вынесем сложность в ремоут конфиг»); применяет tuneSpec при создании уровня, удалённые ключи — в скобках ---
+  ASSIST_UNTIL: 5,     // до какого уровня (номер игры) раздача «под пару» и догонялка (assist_until_level); с 6-го — обычная раздача
+  ASSIST_PAIR: 1,      // вероятность укладки «под пару» на этих уровнях (assist_pair_chance, 0…1)
+  DEAL_EACH_UNTIL: 8,  // до какого уровня раздача после каждого хода; дальше — DEAL (deal_each_until_level)
+  HELP_SCALE: 1,       // множитель доли раздач «пара к одинокой» help (help_scale, 0…2; итог не больше 1)
+  FIGS_SCALE: 1,       // множитель длины уровней — числа фигур в заказах (figs_scale, 0,5…2)
   LOOP_FROM: 49,       // после последнего уровня таблицы — по кругу с этого номера (номера на экране продолжают расти)
   BOOST_START: 2,      // сколько каждого бустера (магнит, метла, отмена) лежит в сейве на старте
   REVIVE_PAIRS: 2,     // «Продолжить» после проигрыша: сколько пар под заказ магнит стыкует сам (плюс пустой лоток и метла)
@@ -428,7 +434,8 @@ const MID  = { ...B, role: 'mid', colors: 4, pairs: 4, stones: 1, figs: 10, osz:
 const TOUGH = { ...B, role: 'tough', colors: 4, pairs: 4, stones: 1, figs: 12, osz: 3, want: 0.32 };
 // Вводные 5–10 (17.11, Андрей: «генерация мягче, приятнее, больше генерить, уровни длиннее»): раздача каждый ход и «под пару» (как урок 4),
 // больше заказов против «мусора»; фигур ×2 (каждый ход раздача — уровень проходится быстрее). Замер — audit/intro.mjs, выбор — DESIGN.
-const SOFT = { every: 1, help: 1, want: 0.9, near: true, deal: 'each' };
+// 18.11: помощь («под пару», догонялка, help 1) — только до CFG.ASSIST_UNTIL (5-й); дальше help базы 0,85 и обычная клетка призрака (tuneSpec).
+const SOFT = { every: 1, help: B.help, helpAssist: 1, want: 0.9, catchup: 1 };   // catchup 1 — последняя фигура уровня приходит вовремя и без помощи
 const HARD = { ...B, role: 'hard', colors: 5, pairs: 4, stones: 1, figs: 13, osz: 3, want: 0.42, hard: true };
 const LEVELS = [
   // --- глава 1: основа ---
@@ -445,9 +452,9 @@ const LEVELS = [
   { n: 5,  ...B, ...SOFT, colors: 3, pairs: 3, stones: 1, figs: 17, osz: 1, seed: 0 },
   { n: 6,  ...B, ...SOFT, colors: 3, pairs: 4, stones: 1, figs: 18, osz: 2, seed: 2 },
   { n: 7,  ...B, ...SOFT, colors: 3, pairs: 4, stones: 2, figs: 19, osz: 2, seed: 16 },
-  { n: 8,  ...B, ...SOFT, colors: 4, pairs: 4, stones: 1, figs: 20, osz: 2, seed: 9 },
-  { n: 9,  ...B, ...SOFT, colors: 4, pairs: 4, stones: 1, figs: 22, osz: 2, seed: 11 },
-  { n: 10, ...B, ...SOFT, colors: 3, pairs: 4, stones: 1, figs: 23, osz: 3, seed: 0 },
+  { n: 8,  ...B, ...SOFT, colors: 4, pairs: 4, stones: 1, figs: 11, osz: 2, seed: 22 },   // 18.11: с 6-го без помощи раздачи — короче (было 20 фигур), сид заново
+  { n: 9,  ...B, ...SOFT, colors: 4, pairs: 4, stones: 1, figs: 13, osz: 2, seed: 2 },    // было 22 фигуры
+  { n: 10, ...B, ...SOFT, colors: 3, pairs: 4, stones: 1, figs: 14, osz: 3, seed: 1 },    // было 23 фигуры
   // --- A. верх/низ ---
   { n: 11, layout: ['. . h^ . .', '. . . . .', 's . . . S', '. . . . .', '. . H^ . .'], queue: ['h', 's'], every: 0, lesson: true },
   { n: 12, ...EASY,  vert: 0.5, seed: 1 },
@@ -727,10 +734,10 @@ function planNext(s){
   const W = wantedColors(s), biased = hashRand(s.seed, s.k, 7) < s.want;
   let lonely = [];
   for (let c = 0; c < s.colors; c++) for (let ax = 0; ax < 2; ax++) if (bal[c][ax]) lonely.push([c, ax]);
-  let code;
+  let code; const near = s.near && (s.nearP >= 1 || hashRand(s.seed, s.k, 11) < s.nearP);   // «под пару» в этой раздаче (вероятность nearP)
   if (lonely.length && hashRand(s.seed, s.k, 1) < s.help){
     const lw = lonely.filter(q => W[q[0]]); if (biased && lw.length) lonely = lw;
-    if (s.near){ const ok = lonely.filter(q => lineFits(s, pieceCode(q[0], q[1] * 2 + (bal[q[0]][q[1]] > 0 ? 1 : 0)))); if (ok.length) lonely = ok; }   // урок: пару даём той, к которой можно встать в ряд (не прижатой к «не той» стене)
+    if (near){ const ok = lonely.filter(q => lineFits(s, pieceCode(q[0], q[1] * 2 + (bal[q[0]][q[1]] > 0 ? 1 : 0)))); if (ok.length) lonely = ok; }   // урок: пару даём той, к которой можно встать в ряд (не прижатой к «не той» стене)
     const [col, ax] = lonely[Math.floor(hashRand(s.seed, s.k, 2) * lonely.length)];
     const side = ax * 2 + (bal[col][ax] > 0 ? 1 : 0);
     code = pieceCode(s.rainbow && hashRand(s.seed, s.k, 6) < s.rainbow ? RAINBOW : col, side);
@@ -743,7 +750,7 @@ function planNext(s){
   }
   if (s.timerP && hashRand(s.seed, s.k, 10) < s.timerP) code += 1000 * s.timer;
   let cell = empties.length ? empties[Math.floor(hashRand(s.seed, s.k, 5) * empties.length)] : -1;
-  if (s.near && cell >= 0) cell = nearCell(s, code, cell);
+  if (near && cell >= 0) cell = nearCell(s, code, cell);
   s.next = { code, cell };
 }
 // Раздача «под пару» (урок раздачи, spec.near): клетка, встав в которую, новая половинка стыкуется со своей парой одним свайпом
@@ -860,12 +867,13 @@ function makeState(li, spec, grid, w, h, seed, floor){
   const queue = genOrders(spec, seed);
   const s = { li, n: spec.n, w, h, grid, floor: floor || new Array(w * h).fill(0), seed,
     queue, show: spec.show || CFG.ORDER_SHOW, cap: (spec.cap || CFG.TRAY_CAP) + Math.max(0, CFG.TRAY_PLUS || 0),
-    want: Math.min(1, (spec.want === undefined ? CFG.WANT : spec.want) + (spec.every ? Math.max(0, CFG.WANT_BONUS || 0) : 0)),
+    want: Math.max(0, Math.min(1, (spec.want === undefined ? CFG.WANT : spec.want) + (spec.every && !spec.wantFixed ? CFG.WANT_BONUS || 0 : 0))),   // точечный want из level_overrides — без сдвига
     active: [], oi: 0, tray: [], served: 0, total: queue.reduce((n, o) => n + o.length, 0), trayOver: false, capBonus: 0,
     crateGoal: spec.crateGoal || 0, hard: !!spec.hard,
     every: spec.every || 0, colors: spec.colors || 5, help: spec.help === undefined ? 0.8 : spec.help,
     vert: spec.vert || 0, rainbow: spec.rainbow || 0, timerP: spec.timerP || 0, timer: spec.timer || 8,
-    deal: spec.deal || CFG.DEAL, near: !!spec.near, k: 0, moves: 0, docks: 0, crates: 0, dead: false, next: null, last: null };
+    deal: spec.deal || CFG.DEAL, near: !!spec.near, nearP: spec.nearP === undefined ? 1 : spec.nearP,
+    catchup: spec.catchup !== undefined ? spec.catchup : spec.near ? 2 : 0, k: 0, moves: 0, docks: 0, crates: 0, dead: false, next: null, last: null };
   for (let a = 0; a < s.show; a++) s.active.push(s.oi < queue.length ? newOrder(s) : null);
   if (s.every > 0) planNext(s);
   return s;
@@ -911,8 +919,24 @@ function advancePhase(s, ev, by){
   }
 }
 function levelSeed(spec){ return 1000 + spec.n * 97 + (spec.seed || 0); }
+// Сложность уровня с учётом ручек CFG (удалённый конфиг) и точечных правок level_overrides (spec.ov). num — номер уровня в игре (li + 1).
+// Уроки с ручным полем и блок не трогаются. Без удалённого конфига результат = таблица LEVELS (с помощью до 5-го и раздачей каждый ход до 8-го).
+function tuneSpec(spec, num){
+  if (spec.layout || spec.block || !spec.every) return spec;
+  const o = { ...spec }, ov = spec.ov || {};
+  const assist = num <= CFG.ASSIST_UNTIL;                                   // «под пару» и догонялка
+  o.near = assist; o.nearP = assist ? CFG.ASSIST_PAIR : 0; o.catchup = assist ? 2 : spec.catchup || 0;   // catchup: 2 — догонялка, 1 — только последняя фигура уровня
+  o.help = Math.min(1, Math.max(0, (assist && spec.helpAssist !== undefined ? spec.helpAssist : spec.help === undefined ? 0.8 : spec.help) * CFG.HELP_SCALE));
+  o.figs = Math.max(3, Math.round((spec.figs || 0) * CFG.FIGS_SCALE));
+  o.deal = spec.deal || (num <= CFG.DEAL_EACH_UNTIL ? 'each' : undefined);
+  for (const f of ['want', 'help', 'figs', 'cap', 'colors', 'deal', 'seed', 'osz', 'show', 'pairs', 'stones']) if (ov[f] !== undefined) o[f] = ov[f];
+  if (ov.assist !== undefined){ o.near = ov.assist > 0; o.nearP = ov.assist; o.catchup = ov.assist > 0 ? 2 : spec.catchup || 0; }
+  if (ov.catchup !== undefined) o.catchup = ov.catchup;
+  if (ov.want !== undefined) o.wantFixed = true;
+  return o;
+}
 function createState(li){
-  const spec = levelSpec(li), seed = levelSeed(spec);
+  const spec = tuneSpec(levelSpec(li), li + 1), seed = levelSeed(spec);
   if (spec.block){ const P = spec.block[0], L = parseLayout(P.layout), s = makeState(li, { ...spec, ...P, show: spec.show }, L.grid, L.w, L.h, seed, L.floor);   // блок: первая фаза
     s.block = spec.block; s.ph = 0; for (let a = 0; a < s.active.length; a++) if (a >= (P.show || s.show)) s.active[a] = null; s.oi = s.active.filter(Boolean).length; return s; }
   if (spec.layout){ const L = parseLayout(spec.layout); return makeState(li, spec, L.grid, L.w, L.h, seed, L.floor); }
@@ -970,11 +994,11 @@ function applyMove(s, m){
   last.extra = topUp(n, last.ev);
   // «Под пару» (урок 4, вводные 5–10; 17.11), в конце уровня: если после раздачи на поле нет ни одной стыковки под заказ (например, поле опустело, а последней
   // фигуры нет вовсе), в тот же ход приходит вторая половинка — пара к первой, в ряд с ней: собирается одним свайпом, без пустых ходов в конце.
-  if (n.near && last.spawn && NEAR_DEPTH === 0 && !isWin(n) && !isLose(n) && !n.trayOver && ordersLeft(n) && n.grid.indexOf(0) >= 0){
+  if (n.catchup && last.spawn && NEAR_DEPTH === 0 && !isWin(n) && !isLose(n) && !n.trayOver && ordersLeft(n) && n.grid.indexOf(0) >= 0){
     NEAR_DEPTH++; let has; try { has = orderMoves(n).length > 0; } finally { NEAR_DEPTH--; }   // проверка ходов внутри это правило не запускает
     n.dry = has ? 0 : (s.dry || 0) + 1;
   }
-  if (n.near && last.spawn && NEAR_DEPTH === 0 && n.dry && (n.oi >= n.queue.length || n.dry >= 2)){   // в конце уровня (очередь исчерпана) или второй ход подряд без стыковки под заказ
+  if (n.catchup && last.spawn && NEAR_DEPTH === 0 && n.dry && (n.oi >= n.queue.length || (n.catchup >= 2 && n.dry >= 2))){   // catchup 1 — только в конце уровня   // в конце уровня (очередь исчерпана) или второй ход подряд без стыковки под заказ
     n.dry = 0; NEAR_DEPTH++;
     const pick = orderHalf(n, last.spawn.cell), picks = pick ? [pick] : orderPair(n, last.spawn.cell);   // одной половинкой не выходит (одинокие у стен) — пара целиком, в ряд
     const nr = n.near; n.near = false;
@@ -1157,6 +1181,21 @@ function greedyPlay(s){ return playBot(s, 'greedy', 1); }
 function randomRun(li, seed){ return playBot(createState(li), 'random', seed); }
 function noviceRun(li, seed){ return playBot(createState(li), 'novice', seed); }
 function greedyRun(li){ return playBot(createState(li), 'greedy', 1); }
+// level_overrides: { "12": { "want": 0.5, "help": 0.8, "figs": 14, "cap": 4, "colors": 4, "deal": "each", "assist": 0.5 } } — точечная правка
+// генерируемого уровня таблицы без сборки (уроки с ручным полем и блок не трогаются). Ложится поверх глобальных ручек (tuneSpec, spec.ov):
+// figs — точное число фигур (figs_scale на него не действует). Поля и пределы — в LIM; неверное поле пропускается.
+function applyLevelOverrides(o, onApply){   // в ядре (18.11) — чтобы тест проверял тот же разбор; onApply — журнал оболочки
+  if (!o || typeof o !== 'object') return;
+  const LIM = { want: [0, 1], help: [0, 1], assist: [0, 1], seed: [0, 1e6], cap: [2, 6], colors: [2, 5], figs: [3, 60], osz: [1, 3], show: [1, 3], pairs: [2, 6], stones: [0, 4] };
+  const FRAC = ['want', 'help', 'assist'];
+  for (const key of Object.keys(o)){
+    const li = parseInt(key, 10) - 1, ov = o[key]; if (!(li >= 0 && li < LEVELS.length) || !ov || typeof ov !== 'object' || LEVELS[li].layout || LEVELS[li].block) continue;
+    const next = {};
+    for (const f of Object.keys(LIM)) if (ov[f] !== undefined){ const n = Number(ov[f]); if (isFinite(n) && n >= LIM[f][0] && n <= LIM[f][1]) next[f] = FRAC.includes(f) ? n : Math.round(n); }
+    if (ov.deal === 'each' || ov.deal === 'miss') next.deal = ov.deal;
+    if (Object.keys(next).length){ LEVELS[li] = { ...LEVELS[li], ov: { ...(LEVELS[li].ov || {}), ...next } }; if (onApply) onApply(li + 1, next); }
+  }
+}
 /* КОНЕЦ ЯДРА */
 
 // ---------------------------------------------------------------------------
@@ -1205,25 +1244,21 @@ function readSdkConfig(){
     CFG.REVIVE_PAIRS = int(get('revive_pairs', CFG.REVIVE_PAIRS), CFG.REVIVE_PAIRS, 0, 5);             // «Continue»: сколько пар магнит собирает сам
     RC.free_revive = val(get('free_revive', RC.free_revive)) === true;                                 // первый «Continue» за уровень — без ролика
     RC.revives_per_level = int(get('revives_per_level', RC.revives_per_level), RC.revives_per_level, 0, 5);   // сколько «Continue» за уровень (0 — нет)
-    const wb = num(get('want_bonus', 0), 0); CFG.WANT_BONUS = wb >= 0 && wb <= 0.5 ? wb : 0;           // доля нужных раздач: только легче
+    const wb = num(get('want_bonus', 0), 0); CFG.WANT_BONUS = wb >= -0.5 && wb <= 0.5 ? wb : 0;        // сдвиг доли нужных заказу раздач (want)
+    // 18.11: сложность по уровням (DESIGN «Сложность в удалённом конфиге»): неверное значение — остаётся умолчание
+    const rng = (k, d, lo, hi) => { const n = num(get(k, d), d); return n >= lo && n <= hi ? n : d; };
+    CFG.ASSIST_UNTIL = int(get('assist_until_level', CFG.ASSIST_UNTIL), CFG.ASSIST_UNTIL, 0, 1000);   // до какого уровня «под пару» и догонялка
+    CFG.ASSIST_PAIR = rng('assist_pair_chance', CFG.ASSIST_PAIR, 0, 1);                                 // вероятность укладки «под пару»
+    CFG.DEAL_EACH_UNTIL = int(get('deal_each_until_level', CFG.DEAL_EACH_UNTIL), CFG.DEAL_EACH_UNTIL, 0, 1000);   // до какого уровня раздача каждый ход
+    CFG.HELP_SCALE = rng('help_scale', CFG.HELP_SCALE, 0, 2);                                           // множитель доли «пара к одинокой»
+    CFG.FIGS_SCALE = rng('figs_scale', CFG.FIGS_SCALE, 0.5, 2);                                         // множитель длины уровней
     const dm = val(get('deal_mode', CFG.DEAL)); if (dm === 'miss' || dm === 'each') CFG.DEAL = dm;     // раздача: после хода без стыковки | каждый ход
-    applyLevelOverrides(val(get('level_overrides', {})));
+    applyLevelOverrides(val(get('level_overrides', {})), (n, next) => log('event', 'remote.level', n + ' ' + JSON.stringify(next)));
     log('event', 'remote', 'skip=' + RC.skip_levels.join(',') + ' loop=' + CFG.LOOP_FROM + ' inter=' + CFG.INTER_FROM + ' boost=' + CFG.BOOST_START + '/' + RC.boosts_per_ad +
-      ' cap+' + CFG.TRAY_PLUS + ' revive=' + CFG.REVIVE_PAIRS + 'x' + RC.revives_per_level + (RC.free_revive ? ' free' : '') + ' want+' + CFG.WANT_BONUS + ' deal=' + CFG.DEAL);
+      ' cap+' + CFG.TRAY_PLUS + ' revive=' + CFG.REVIVE_PAIRS + 'x' + RC.revives_per_level + (RC.free_revive ? ' free' : '') + ' want+' + CFG.WANT_BONUS + ' deal=' + CFG.DEAL +
+      ' assist<=' + CFG.ASSIST_UNTIL + 'x' + CFG.ASSIST_PAIR + ' each<=' + CFG.DEAL_EACH_UNTIL + ' help*' + CFG.HELP_SCALE + ' figs*' + CFG.FIGS_SCALE);
   } catch (e) { log('event', 'remote', 'sdk-error'); }
   RC.deal = CFG.DEAL;
-}
-// level_overrides: { "57": { "want": 0.6, "seed": 3 } } — правка генерируемого уровня таблицы без сборки (уроки с ручным полем не трогаются).
-// Поля и пределы — в LIM; неверное поле пропускается.
-function applyLevelOverrides(o){
-  if (!o || typeof o !== 'object') return;
-  const LIM = { want: [0.1, 1], seed: [0, 1e6], cap: [2, 6], colors: [2, 5], figs: [3, 24], osz: [1, 3], show: [1, 3], pairs: [2, 6], stones: [0, 4] };
-  for (const key of Object.keys(o)){
-    const li = parseInt(key, 10) - 1, ov = o[key]; if (!(li >= 0 && li < LEVELS.length) || !ov || typeof ov !== 'object' || LEVELS[li].layout) continue;
-    const next = {};
-    for (const f of Object.keys(LIM)) if (ov[f] !== undefined){ const n = Number(ov[f]); if (isFinite(n) && n >= LIM[f][0] && n <= LIM[f][1]) next[f] = f === 'want' ? n : Math.round(n); }
-    if (Object.keys(next).length){ LEVELS[li] = { ...LEVELS[li], ...next }; log('event', 'remote.level', (li + 1) + ' ' + JSON.stringify(next)); }
-  }
 }
 function log(kind, name, info){            // журнал [game] — одна строка на событие (§11)
   console.log('[game] ' + JSON.stringify({ t: +((performance.now() - T0) / 1000).toFixed(3), kind, name, info: info === undefined ? '' : String(info) }));
@@ -1539,7 +1574,8 @@ function startLevel(li){
   Audio.intro(); log('fx.start', 'intro'); G.fxOpen.push({ name: 'intro', t1: G.levelT0 + CFG.INTRO_MS + CFG.INTRO_STEP * 12 });
   G.cursor = G.s.grid.findIndex(c => c > 0);
   const spec = levelSpec(li);
-  log('event', 'level.start', 'level=' + (li + 1) + ' goal=' + goalProgress(G.s).total + ' every=' + G.s.every + ' cap=' + G.s.cap + (G.s.hard ? ' hard' : ''));
+  log('event', 'level.start', 'level=' + (li + 1) + ' goal=' + goalProgress(G.s).total + ' every=' + G.s.every + ' cap=' + G.s.cap + (G.s.hard ? ' hard' : '') +
+    (G.s.every ? ' deal=' + G.s.deal + ' want=' + +G.s.want.toFixed(2) + ' help=' + +G.s.help.toFixed(2) + ' colors=' + G.s.colors + (G.s.near ? ' assist=' + G.s.nearP : '') : ''));   // 18.11: сложность уровня — видно, что удалённый конфиг применился
   goto('game'); hud(); fit();
 }                                                  // par для звёзд считается на победе (finishEnding): на длинных уровнях луч солвера — десятки мс, на старте это рывок
 function hud(){
