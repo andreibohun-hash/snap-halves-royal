@@ -178,10 +178,10 @@ html[data-skin=royal] .card{z-index:1} html[data-skin=royal] .card.rw-hide{displ
 html[data-skin=royal] #overlay.lz{background:none;align-items:flex-end;padding:10px 12px max(14px,env(safe-area-inset-bottom))}
 html[data-skin=royal] #overlay.lz.failed{background:rgba(12,18,56,.68);align-items:center}
 html[data-skin=royal] .lz-hole{position:absolute;z-index:0;pointer-events:none;box-shadow:0 0 0 3000px rgba(12,18,56,.62);animation:lzIn .3s ease-out both}
-html[data-skin=royal] .lz-hole::after{content:'';position:absolute;inset:-4px;border-radius:inherit;border:4px solid #ff4458;box-shadow:0 0 18px 4px rgba(255,50,70,.65),inset 0 0 14px rgba(255,50,70,.45);animation:lzPulse .8s ease-in-out infinite alternate}
+html[data-skin=royal] .lz-hole::after{content:'';position:absolute;inset:-4px;border-radius:inherit;border:4px solid #ff4458;box-shadow:0 0 18px 4px rgba(255,50,70,.65),inset 0 0 14px rgba(255,50,70,.45);animation:lzPulse .8s ease-in-out 3 alternate both}   /* 18.11: три удара и ровно — меньше тревоги */
 @keyframes lzIn{from{box-shadow:0 0 0 3000px rgba(12,18,56,0)}}
 @keyframes lzPulse{from{opacity:.5}to{opacity:1}}
-html[data-skin=royal] .card.rlose{max-width:350px;padding:34px 12px 10px;margin-top:34px;overflow:visible;animation:rlUp .36s .45s cubic-bezier(.2,1.4,.5,1) both}
+html[data-skin=royal] .card.rlose{max-width:330px;padding:36px 14px 12px;margin-top:34px;overflow:visible;animation:rlUp .36s .45s cubic-bezier(.2,1.4,.5,1) both}
 html[data-skin=royal] .card.rlose.board,html[data-skin=royal] .card.rlose.timer{animation-delay:.8s}   /* поле забито: сначала видно поле в красной кромке */
 html[data-skin=royal] .card.rlose.failed,html[data-skin=royal] .card.rlose.giveup,html[data-skin=royal] .card.rlose.quick{animation-delay:0s}
 html[data-skin=royal] .rl-2l{display:inline-flex;flex-direction:column;align-items:center;line-height:1;vertical-align:middle}
@@ -193,38 +193,22 @@ html[data-skin=royal] .rl-ribbon svg{display:block;width:100%;height:auto;filter
 html[data-skin=royal] .rl-ribbon span{position:absolute;left:12%;right:12%;top:2.6%;height:70.5%;display:flex;align-items:center;justify-content:center;font-size:29px;font-weight:1000;color:#fff;
   -webkit-text-stroke:6px #6b2a08;paint-order:stroke fill;text-shadow:0 4px 0 #5a1f05;line-height:1;white-space:nowrap}
 html[data-skin=royal] .rl-ribbon.fail span{-webkit-text-stroke-color:#2a3048;text-shadow:0 4px 0 #222838}
-html[data-skin=royal] .rl-count{position:absolute;right:10px;top:40px;padding:0 8px;border-radius:9px;background:rgba(8,14,60,.55);border:1.5px solid rgba(255,211,90,.6);font-size:13px;font-weight:1000;color:#ffe14d;z-index:1}
-html[data-skin=royal] .rl-sub{display:flex;align-items:center;justify-content:center;gap:6px;font-size:16px;font-weight:900;color:#ffd7cf;margin:0 0 8px;-webkit-text-stroke:3px #10195a;paint-order:stroke fill}
-html[data-skin=royal] .rl-sub canvas{width:26px;height:26px;flex:none}
-html[data-skin=royal] .rl-level{display:inline-block;margin:2px 0 10px;padding:3px 20px;border-radius:12px;background:#1a2470;border:2px solid #ffd35a;font-size:18px;font-weight:1000;color:#fff}
-html[data-skin=royal] .rl-prog{margin:0 0 10px;padding:7px 10px 9px;border-radius:16px;background:rgba(8,14,60,.4);border:1.5px solid rgba(255,211,90,.5)}
-html[data-skin=royal] .rl-head{display:flex;align-items:center;justify-content:center;gap:8px;font-size:19px;font-weight:1000;color:#fff;-webkit-text-stroke:3.5px #10195a;paint-order:stroke fill;margin-bottom:6px;min-height:30px}
-html[data-skin=royal] .rl-head b{color:#ffe14d;font-size:24px}
-html[data-skin=royal] .rl-bar{position:relative;height:20px;border-radius:10px;background:#0d1650;box-shadow:inset 0 2px 4px rgba(0,0,0,.5);overflow:hidden}
-html[data-skin=royal] .rl-bar i{position:absolute;left:0;top:0;bottom:0;border-radius:10px;background:linear-gradient(180deg,#ffe58a,#f5b520 60%,#d98a10);box-shadow:inset 0 2px 0 rgba(255,255,255,.5)}
-html[data-skin=royal] .rl-bar em{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-style:normal;font-size:14px;font-weight:1000;color:#fff;-webkit-text-stroke:3px #4a2a08;paint-order:stroke fill}
-html[data-skin=royal] .rl-prog.giveup .rl-bar i{background:linear-gradient(180deg,#ff9aa4,#ff4458 60%,#c81e34)}
-html[data-skin=royal] .rl-prog.failed .rl-bar i{background:linear-gradient(180deg,#c8d0e6,#8d97b8);box-shadow:none}
-html[data-skin=royal] .rl-figs{display:inline-flex;align-items:center;gap:2px}
-html[data-skin=royal] .rl-figs canvas{width:30px;height:30px}
-html[data-skin=royal] .rl-figs b{font-size:15px;font-weight:1000;color:#fff;margin-left:2px}
-html[data-skin=royal] .rl-gives{display:flex;justify-content:center;gap:6px;margin:0 0 10px}
-html[data-skin=royal] .rl-chip{flex:1;max-width:108px;display:flex;align-items:center;justify-content:center;gap:3px;height:52px;padding:0 6px 0 3px;border-radius:15px;background:linear-gradient(180deg,#4fc85c,#2a9a3c);
-  border:2px solid #b8f5a8;box-shadow:0 4px 0 #1d6e2a,inset 0 2px 0 rgba(255,255,255,.35)}
-html[data-skin=royal] .rl-chip.gold{background:linear-gradient(180deg,#ffd75a,#f0a418);border-color:#fff2b0;box-shadow:0 4px 0 #9a5a08,inset 0 2px 0 rgba(255,255,255,.4)}
-html[data-skin=royal] .rl-chip canvas{width:38px;height:38px;flex:none}
-html[data-skin=royal] .rl-chip span{display:flex;flex-direction:column;align-items:flex-start;line-height:1}
-html[data-skin=royal] .rl-chip b{font-size:20px;font-weight:1000;color:#fff;-webkit-text-stroke:3.5px #145a20;paint-order:stroke fill}
-html[data-skin=royal] .rl-chip.gold b{-webkit-text-stroke-color:#7a4204}
-html[data-skin=royal] .rl-chip small{font-size:12px;font-weight:900;color:#eaffe4;letter-spacing:.02em;margin-top:2px}
-html[data-skin=royal] .rl-go{position:relative;min-width:230px;font-size:26px}
+html[data-skin=royal] .rl-level{display:inline-block;margin:2px 0 14px;padding:3px 20px;border-radius:12px;background:#1a2470;border:2px solid #ffd35a;font-size:18px;font-weight:1000;color:#fff}
+/* 18.11: карточка ривайва — одна мысль: «Only N left!» и сами фигуры крупно (без полосы, «что даст», подзаголовка и счётчика) */
+html[data-skin=royal] .rl-left{font-size:27px;font-weight:1000;color:#fff;-webkit-text-stroke:5px #10195a;paint-order:stroke fill;line-height:1.15;margin:4px 0 6px}
+html[data-skin=royal] .rl-left b{color:#ffe14d;font-size:33px}
+html[data-skin=royal] .rl-want{display:flex;align-items:center;justify-content:center;gap:4px;margin:0 0 12px}
+html[data-skin=royal] .rl-want canvas{width:66px;height:66px;filter:drop-shadow(0 0 9px rgba(255,226,120,.5))}
+html[data-skin=royal] .rl-want.n1 canvas{width:80px;height:80px} html[data-skin=royal] .rl-want.n3 canvas{width:60px;height:60px}
+html[data-skin=royal] .rl-want b{font-size:24px;font-weight:1000;color:#fff;-webkit-text-stroke:4px #10195a;paint-order:stroke fill;margin-left:4px}
+html[data-skin=royal] .rl-line{font-size:18px;font-weight:900;color:#ffd7cf;-webkit-text-stroke:3.5px #10195a;paint-order:stroke fill;margin:6px 0 14px}
+html[data-skin=royal] .rl-go{position:relative;width:100%;max-width:300px;min-height:72px;font-size:30px}
 html[data-skin=royal] .rl-free{display:inline-block;margin-left:8px;padding:1px 8px 2px;border-radius:9px;background:#ffe14d;color:#7a4204;font-style:normal;font-size:16px;font-weight:1000;
   -webkit-text-stroke:0;text-shadow:none;vertical-align:3px;box-shadow:0 2px 0 #b07a10}
 html[data-skin=royal] .rl-ad{display:inline-flex;width:26px;height:26px;margin-right:8px;border-radius:50%;background:#fff;color:#2a9a3c;align-items:center;justify-content:center;vertical-align:-3px;-webkit-text-stroke:0}
 html[data-skin=royal] .rl-ad .adico{width:13px;height:13px;margin-left:2px}
 html[data-skin=royal] .rl-low{margin-top:6px}
-@media (max-height:680px){ html[data-skin=royal] .card.rlose{padding-top:32px} html[data-skin=royal] .rl-prog{margin-bottom:8px;padding:5px 8px 7px} html[data-skin=royal] .rl-gives{margin-bottom:8px}
-  html[data-skin=royal] .rl-sub{margin-bottom:6px} html[data-skin=royal] .rl-chip{height:48px} }
+@media (max-height:680px){ html[data-skin=royal] .card.rlose{padding-top:32px} html[data-skin=royal] .rl-want{margin-bottom:8px} html[data-skin=royal] .rl-go{min-height:64px} }
 @media (prefers-reduced-motion: reduce){ html[data-skin=royal] .card.rlose, html[data-skin=royal] .lz-hole, html[data-skin=royal] .lz-hole::after{animation:none} }
 </style>
 </head>
@@ -347,6 +331,8 @@ const CFG = {
   BUZZ_MS: 12,         // вибрация — один короткий мягкий импульс
   LAND_MS: 190,        // сплющивание плитки при остановке
   HIT_MS: 210,         // вздрагивание плитки/камня, в которые упёрлись
+  HONEY_LAND_K: 2.4,   // остановка на мёде: плитка вязнет и качается дольше обычного сплющивания (×LAND_MS)
+  HONEY_SPLASH_MS: 560, // лужица мёда вздрагивает и брызжет каплями
   TRAIL_N: 3,          // сколько призраков шлейфа за скользящей плиткой
   PRAISE_MS: 950,      // сколько живёт надпись «Щёлк!» / «Отлично! ×2»
   CONFETTI_DOCK: 18,   // конфетти на одну стыковку
@@ -440,7 +426,11 @@ const LEVELS = [
   { n: 14, ...TOUGH, want: 0.46, vert: 0.5, seed: 31 },
   { n: 15, ...HARD,  want: 0.55, vert: 0.5, seed: 4 },
   // --- B. мёд ---
-  { n: 16, layout: ['. . h . .', '. . . . .', '. . ~ H .', '. . . . .', '. . . . .'], queue: ['h'], every: 0, lesson: true },
+  // урок мёда (уровень 14) — два шага на одном поле (18.11, Андрей: «сначала свайпаем в мёд — там чётко видно, что остановилось; а потом к ней
+  // присоединяем вторую половину»): 1) сердце съезжает по пустому столбцу и встаёт на мёде посередине (без мёда доехало бы до низа) — без стыковки;
+  // 2) правая половинка подъезжает к нему справа. В один ход не решается (test.mjs). hand — ходы руки [клетка, направление 0→ 1← 2↓ 3↑]:
+  // солвер на шаге 2 предпочёл бы снова двинуть сердце с мёда, а урок показывает «приставь вторую половинку».
+  { n: 16, layout: ['. . . . .', '. . h . .', '. . . . .', '. . ~ . H', '. . . . .', '. . . . .'], queue: ['h'], every: 0, lesson: true, hand: [[7, 2], [19, 1]] },
   { n: 17, ...EASY,  honey: 3, seed: 0 },
   { n: 18, ...MID,   honey: 4, seed: 7 },
   { n: 19, ...TOUGH, honey: 4, seed: 14 },
@@ -1378,6 +1368,7 @@ const Audio = {
   boom(delay, vol){ delay = Math.max(0, delay || 0); vol = vol || 1; this.tone(90, 260, 'sine', delay, 0.28 * vol, 40); this.hiss(200, 1800, 380, delay, 0.3 * vol, 'lowpass'); this.hiss(3000, 9000, 700, delay + 0.06, 0.07 * vol, 'highpass'); },   // хлопок и треск
   cannon(delay){ delay = Math.max(0, delay || 0); this.hiss(160, 600, 120, delay, 0.32, 'lowpass'); this.tone(110, 140, 'sine', delay, 0.25, 50); this.hiss(700, 4000, 9000, delay + 0.08, 0.06, 'highpass'); log('sound', 'cannon'); },
   intro(){ [392, 523, 659].forEach((f, i) => this.tone(f, 120, 'sine', i * 0.06, 0.08)); log('sound', 'intro'); },
+  squelch(delay){ this.hiss(240, 1100, 160, delay, 0.3, 'lowpass'); this.tone(230, 190, 'sine', delay, 0.22, 70); this.tone(150, 130, 'triangle', delay + 0.08, 0.09, 300); log('sound', 'squelch'); },   // «чавк» мёда
   plop(delay){ this.tone(720, 120, 'sine', delay, 0.16, 300); log('sound', 'plop'); },
   nope(){ this.tone(140, 70, 'square', 0, 0.05); log('sound', 'nope'); },
   undo(){ this.hiss(120, 2400, 900, 0, 0.1); log('sound', 'undo'); },
@@ -1539,7 +1530,7 @@ function clearFx(hard){
   for (const f of G.fxOpen) if (!keep(f)) log('fx.end', f.name, 'cut');
   G.fxOpen = G.fxOpen.filter(keep);
   G.merges = hard ? [] : G.merges.filter(M => now >= M.t0);
-  G.slide = null; G.drops = []; G.wiggle = null; G.land = null; G.hit = null; G.ghosts = []; G.sweep = null;
+  G.slide = null; G.drops = []; G.wiggle = null; G.land = null; G.honeyHit = null; G.hit = null; G.ghosts = []; G.sweep = null;
   if (hard){ G.parts = []; G.praise = []; G.shake = null; G.combo = 0; G.crateFly = []; G.trayFlash = 0; G.waves = []; G.trayWob = 0; }
   G.fxUntil = G.fxOpen.reduce((m, f) => Math.max(m, f.t1), 0);
 }
@@ -1611,12 +1602,20 @@ function animateMove(n){
   const g = geo(), cs = g.cell, dx = DIRS[L.dir][0], dy = DIRS[L.dir][1];
   if (L.partner < 0){
     // остановка: плитка сплющивается, у переднего края — пыль; то, во что упёрлись, вздрагивает
-    G.land = { cell: L.to, dir: L.dir, t0: t1, t1: t1 + CFG.LAND_MS / ts };
+    // на мёде (18.11, урок мёда): «чавк» — плитка вязнет и качается дольше, лужица расплёскивается каплями и вздрагивает, звук влажный
+    const honey = !!(n.floor && n.floor[L.to] === HONEY);
+    G.land = { cell: L.to, dir: L.dir, t0: t1, t1: t1 + CFG.LAND_MS * (honey ? CFG.HONEY_LAND_K : 1) / ts, honey };
     const x = L.to % n.w, y = (L.to - x) / n.w, bx = x + dx, by = y + dy, p = cellXY(L.to, g);
     const ex = p.x + cs / 2 + dx * cs * 0.45, ey = p.y + cs / 2 + dy * cs * 0.45;
-    burst(7, ex, ey, t1, { type: 'dust', color: -1, angle: Math.atan2(-dy, -dx), spread: 2.6, v: 0.09, life: 380, r: 4, g: 0 });
-    if (bx >= 0 && by >= 0 && bx < n.w && by < n.h) G.hit = { cell: by * n.w + bx, dir: L.dir, t0: t1, t1: t1 + CFG.HIT_MS / ts };
-    else if (L.dist >= 2) shakeAt(t1, 2);
+    if (honey){
+      G.honeyHit = { cell: L.to, t0: t1, t1: t1 + CFG.HONEY_SPLASH_MS / ts };
+      burst(16, p.x + cs / 2, p.y + cs * 0.8, t1, { type: 'dot', colors: ['#f7b733', '#ffd25a', '#e8962a'], angle: -Math.PI / 2, spread: 2.6, v: 0.2, life: 600, r: 4.4, g: 0.0012 });   // капли мёда вверх и в стороны
+      fxOpen('honey', t1 + CFG.HONEY_SPLASH_MS / ts, 'cell=' + L.to);
+    } else {
+      burst(7, ex, ey, t1, { type: 'dust', color: -1, angle: Math.atan2(-dy, -dx), spread: 2.6, v: 0.09, life: 380, r: 4, g: 0 });
+      if (bx >= 0 && by >= 0 && bx < n.w && by < n.h) G.hit = { cell: by * n.w + bx, dir: L.dir, t0: t1, t1: t1 + CFG.HIT_MS / ts };
+      else if (L.dist >= 2) shakeAt(t1, 2);
+    }
   }
   const chain = (by) => L.ev.filter(e => e.by === by && (e.type === 'done' || e.type === 'order' || e.type === 'untray' || e.type === 'phase'));
   let tNext = t1, tEnd = t1;
@@ -1625,7 +1624,7 @@ function animateMove(n){
     Audio.click(n.served, slideMs / 1000, G.combo); buzz([10, 30, 14]);
     tNext = t1 + CFG.DOCK_MS * 0.55 / ts;
     if (ROYAL && CLAW_ON && !L.spawn && n.next && n.every > 0){ G.clawClick = t1; Audio.latch(slideMs / 1000); }   // royal: стыковка — стопор щёлкает, захват держит дальше
-  } else Audio.thunk(slideMs / 1000, L.dist);
+  } else if (G.land && G.land.honey) Audio.squelch(slideMs / 1000); else Audio.thunk(slideMs / 1000, L.dist);
   const sp = animateSpawns(L, T, tNext, n.served);
   tEnd = Math.max(tEnd, sp);
   animateEvents(L, T, t1);
@@ -2025,13 +2024,6 @@ function reviveOffer(s){                                    // одно пред
   if (!reviveFree()) adOffer('continue', 'left=' + (goalProgress(s).total - goalProgress(s).done));
 }
 function reviveDecline(){ if (G.s && reviveOpen(G.s)) log('event', 'monet.decline', revivePlace() + ' ' + reviveInfo(G.s)); }
-// Что даст «Continue» — честно, прогоном того же revive() ядра на копии: сколько фигур уйдёт из лотка, сколько пар соберётся и сколько это
-// фигур в зачёт, сколько клеток освободится, выиграет ли уровень сразу.
-function revivePreview(s){
-  const n = s && revive(s); if (!n) return null;
-  const L = n.last, p0 = goalProgress(s), p1 = goalProgress(n), e0 = s.grid.filter(c => c === 0).length, e1 = n.grid.filter(c => c === 0).length;
-  return { tray: L.cleared.length, pairs: L.pairs.length, gain: p1.done - p0.done, space: Math.max(0, e1 - e0), win: isWin(n) };
-}
 // Фигуры, которых ещё ждут заказы: открытые (незакрытые места) и очередь — цвета по порядку.
 function goalLeftColors(s){
   const out = []; for (const o of s.active) if (o) o.c.forEach((c, k) => { if (!o.f[k]) out.push(c); });
@@ -2051,7 +2043,7 @@ function loseHole(ov, why){
   const q = loseHoleRect(why); h.className = 'lz-hole ' + why;
   Object.assign(h.style, { left: q.x + 'px', top: q.y + 'px', width: q.w + 'px', height: q.h + 'px', borderRadius: q.r + 'px', display: '' });
 }
-const LOSE_T = { tray: ['Tray is full!', 'No room for this shape'], board: ['Board is full!', 'No empty cells left'], timer: ['Turned to stone!', 'A timed half ran out'], stuck: ['No moves!', 'Nothing can slide'] };
+const LOSE_T = { tray: 'Tray is full!', board: 'Board is full!', timer: 'Turned to stone!', stuck: 'No moves!' };
 // Лента-заголовок (та же форма, что WELL DONE!): kind — 'lose' (синяя, «стоп»), 'fail' (серая).
 function loseRibbon(text, kind){
   const c = kind === 'fail' ? ['#9aa6c4', '#6f7c9e', '#56607e', '#424b66', '#2a3048'] : ['#ff9a4a', '#f06a2a', '#cc4a16', '#a8380e', '#5c1a05'];
@@ -2060,51 +2052,30 @@ function loseRibbon(text, kind){
     <path d="M31 57H48V70Z" fill="${c[4]}"/><path d="M309 57H292V70Z" fill="${c[4]}"/>
     <rect x="31" y="2" width="278" height="55" rx="7" fill="url(#rl${kind})" stroke="#ffd35a" stroke-width="3"/><rect x="38" y="7" width="264" height="9" rx="4.5" fill="#fff" opacity=".22"/></svg><span>${text}</span></div>`;
 }
-// Прогресс уровня: «Only 2 left!» / «5 left», полоса done/total и фигуры, которых ещё ждут (до 6, дальше «+N»).
-function loseProgress(s, mode){
-  const p = goalProgress(s), left = p.total - p.done, pct = p.total ? Math.round(100 * p.done / p.total) : 0, cols = goalLeftColors(s), shown = cols.slice(0, 6);
-  const head = mode === 'lose' ? (left <= 3 ? `Only <b>${left}</b> left!` : `<b>${left}</b> left`) : mode === 'giveup' ? `Progress will reset` : `Collected`;
-  const figs = mode === 'lose' && cols.length ? `<span class="rl-figs">${shown.map(c => `<canvas width="64" height="64" data-ic="shape" data-c="${c}"></canvas>`).join('')}${cols.length > shown.length ? `<b>+${cols.length - shown.length}</b>` : ''}</span>` : '';
-  return `<div class="rl-prog ${mode}"><div class="rl-head"><span>${head}</span>${figs}</div><div class="rl-bar"><i style="width:${pct}%"></i><em>${p.done}/${p.total}</em></div></div>`;
+// Сколько осталось и какие фигуры (18.11, Андрей: «ревайв-попап очень шумный, слишком много инфы для человека в стрессе»): одна строка
+// «Only N left!» (≤ 3) / «N left» и сами фигуры крупно — до 3, дальше «+N». Полосы, «что даст» и счётчика 1/2 больше нет.
+function loseLeft(s){
+  const p = goalProgress(s), left = p.total - p.done, cols = goalLeftColors(s), shown = cols.slice(0, 3), more = left - shown.length;
+  const head = left <= 3 ? `Only <b>${left}</b> left!` : `<b>${left}</b> left`;
+  const figs = shown.length ? `<div class="rl-want n${shown.length}">${shown.map(c => `<canvas width="120" height="120" data-c="${c}"></canvas>`).join('')}${more > 0 ? `<b>+${more}</b>` : ''}</div>` : '';
+  return `<div class="rl-left">${head}</div>${figs}`;
 }
 function loseIcons(card){
-  card.querySelectorAll('canvas[data-ic]').forEach((el) => {
-    const c = el.getContext('2d'), k = el.dataset.ic, w = el.width; c.clearRect(0, 0, w, w);
-    if (k === 'shape'){ const col = Number(el.dataset.c); drawChip(c, col === RAINBOW ? 0 : col, w / 2, w / 2, w * 0.42); }
-    else if (k === 'broom' || k === 'magnet'){ const im = ART[k]; if (im && im.complete && im.naturalWidth){ const a = im.naturalWidth / im.naturalHeight, h = w * 0.86, ww = h * a; c.drawImage(im, (w - ww) / 2, (w - h) / 2, ww, h); } }
-    else if (k === 'space'){                                   // свободные клетки: сетка 3×3 с пустыми светлыми клетками и стрелками наружу
-      const q = w * 0.22, o = w / 2 - q * 1.5 - 2;
-      for (let y = 0; y < 3; y++) for (let x = 0; x < 3; x++){ const free = y === 1 || x === 1; c.fillStyle = free ? '#e8f6ff' : '#ffffff'; c.strokeStyle = free ? '#5fd06a' : '#9fb4e6'; c.lineWidth = free ? 3 : 2;
-        rr(c, o + x * (q + 2), o + y * (q + 2), q, q, 4); c.fill(); c.stroke(); if (!free){ c.fillStyle = '#c9d6f5'; rr(c, o + x * (q + 2) + 3, o + y * (q + 2) + 3, q - 6, q - 6, 3); c.fill(); } }
-    }
-    else if (k === 'win') drawShape(c, 2, w / 2, w / 2 + 2, w * 0.42);
-    else if (k === 'fullboard'){                               // поле битком: сетка 4×4 без пустых клеток, красная рамка
-      const q = w * 0.19, o = w / 2 - q * 2 - 3; c.fillStyle = '#ff4458'; rr(c, o - 4, o - 4, q * 4 + 14, q * 4 + 14, 6); c.fill();
-      for (let y = 0; y < 4; y++) for (let x = 0; x < 4; x++){ c.fillStyle = (x + y) % 3 ? '#ffffff' : '#ffd2d6'; rr(c, o + x * (q + 2), o + y * (q + 2), q, q, 3); c.fill(); }
-    } else if (k === 'fulltray'){                              // лоток битком: красная капсула с тремя монетками и лишней сверху
-      const cy = w * 0.62; c.fillStyle = '#ff4458'; rr(c, 2, cy - w * 0.2, w - 4, w * 0.4, w * 0.2); c.fill();
-      for (let i = 0; i < 3; i++){ c.fillStyle = '#fff'; c.beginPath(); c.arc(w * (0.22 + i * 0.28), cy, w * 0.13, 0, Math.PI * 2); c.fill(); }
-      c.fillStyle = '#ffd35a'; c.beginPath(); c.arc(w * 0.78, w * 0.2, w * 0.15, 0, Math.PI * 2); c.fill(); c.strokeStyle = '#fff'; c.lineWidth = 3; c.stroke();
-    }
+  card.querySelectorAll('canvas[data-c]').forEach((el) => {
+    const c = el.getContext('2d'), w = el.width, col = Number(el.dataset.c); c.clearRect(0, 0, w, w);
+    drawChip(c, col === RAINBOW ? 0 : col, w / 2, w / 2, w * 0.4);
   });
 }
+// Проигрыш royal (18.11): причина — в игре под пятном и лентой; в карточке одна мысль «почти у цели» и одна главная кнопка.
 function royalLose(ov, card){
   const s = G.s, why = s ? loseWhy(s) || 'board' : 'board';
   if (!reviveOpen(s)){ G.screen = 'failed'; log('screen', 'failed'); royalFailed(ov, card); return; }    // «Continue» на уровне кончились (или урок без раздачи) — сразу «Level failed»
   reviveOffer(s);
-  const free = reviveFree(), pv = revivePreview(s) || { tray: 0, pairs: 0, gain: 0, space: 0, win: false }, T = LOSE_T[why] || LOSE_T.board;
+  const free = reviveFree(), T = LOSE_T[why] || LOSE_T.board;
   ov.classList.add('lz'); loseHole(ov, why);
-  const chip = (ic, big, small, cls) => `<div class="rl-chip ${cls || ''}"><canvas width="80" height="80" data-ic="${ic}"></canvas><span><b>${big}</b><small>${small}</small></span></div>`;
-  const chips = [];
-  if (pv.tray) chips.push(chip('broom', 'Clear', 'tray'));
-  if (pv.win) chips.push(chip('win', 'Win!', 'level', 'gold'));
-  else if (pv.gain) chips.push(chip('magnet', '+' + pv.gain, pv.gain === 1 ? 'shape' : 'shapes'));
-  if (pv.space && !pv.win) chips.push(chip('space', '+' + pv.space, pv.space === 1 ? 'cell' : 'cells'));
   card.className = 'card rlose ' + why + (G.loseQuick ? ' quick' : ''); G.loseQuick = false;
-  card.innerHTML = `${loseRibbon(T[0], 'lose')}${RC.revives_per_level > 1 ? `<div class="rl-count">${(G.revives || 0) + 1}/${RC.revives_per_level}</div>` : ''}
-    <div class="rl-sub"><canvas width="56" height="56" data-ic="${why === 'tray' ? 'fulltray' : 'fullboard'}"></canvas>${T[1]}</div>
-    ${loseProgress(s, 'lose')}
-    <div class="rl-gives">${chips.join('')}</div>
+  card.innerHTML = `${loseRibbon(T, 'lose')}
+    ${loseLeft(s)}
     <div class="row"><button class="btn g big rl-go" data-act="revive">${free ? 'Continue<em class="rl-free">FREE</em>' : `<span class="rl-ad">${ICON.ad}</span><span class="rl-2l">Continue<small>Watch ad</small></span>`}</button></div>
     <div class="row rl-low"><button class="btn r small" data-act="giveup">Give up</button></div>`;
   loseIcons(card);
@@ -2114,8 +2085,7 @@ function giveUpNeedsConfirm(s){ if (!reviveOpen(s)) return false; const p = goal
 function royalGiveUp(ov, card){
   const s = G.s; ov.classList.add('lz'); loseHole(ov, loseWhy(s) || 'board');
   card.className = 'card rlose giveup';
-  card.innerHTML = `${loseRibbon('Give up?', 'fail')}<div class="rl-sub">${reviveFree() ? 'Continue is free right now' : 'You are so close!'}</div>
-    ${loseProgress(s, 'giveup')}
+  card.innerHTML = `${loseRibbon('Give up?', 'fail')}<div class="rl-line">Your progress will be lost</div>
     <div class="row"><button class="btn g big" data-act="keep">Keep playing</button></div>
     <div class="row rl-low"><button class="btn r small" data-act="giveup-yes">Give up</button></div>`;
 }
@@ -2124,7 +2094,6 @@ function royalFailed(ov, card){
   if (s && G.failKey !== s.li + ':' + s.moves){ G.failKey = s.li + ':' + s.moves; const p = goalProgress(s); log('event', 'level.failed', 'level=' + (s.li + 1) + ' done=' + p.done + '/' + p.total + ' revives=' + (G.revives || 0) + ' why=' + loseWhy(s)); }
   card.className = 'card rlose failed';
   card.innerHTML = `${loseRibbon('Level failed', 'fail')}<div class="rl-level">Level ${s ? s.li + 1 : ''}</div>
-    ${s ? loseProgress(s, 'failed') : ''}
     <div class="row"><button class="btn g big" data-act="retry">Retry</button></div>`;
 }
 // «Продолжить» после проигрыша: лоток пустеет, магнит собирает пары под заказ, метла сметает ряд. Заглушка рекламы — без ролика.
@@ -2217,6 +2186,8 @@ function toVirtual(e){ const r = cv.getBoundingClientRect(); return { x: (e.clie
 // заметный зазор; ПОЛЕ — своя подложка другого тона. Так зона «что собрать и куда ляжет лишнее» не слипается с полем.
 const ORD_H = 56, ORD_GAP = 8, CHIP_R = 20, CHIP_STEP = 47, CARD_PAD = 16;   // карточка заказа облегает свои фишки: высота, зазор, радиус и шаг фишек, поля
 const NEXT_H = 36, NEXT_STEP = 18, NEXT_PAD = 14;                    // маленькая карточка «следующий заказ»: высота, шаг фигур, поля
+// royal (18.11, Андрей: «очередь немного сливается с фоном»): очередь — холодный карман в цвет поля с золотой кромкой, фигуры на белых монетках, «+N» — золотая монетка
+const NEXT_R = { h: 40, step: 23, pad: 15, r: 9.5 };
 const CRATE_CARD_W = 92;                                              // карточка-цель «ящики»: фишка-ящик и счётчик «0/3»
 const RT = SKIN === 'royal';                                          // royal (17.11, мокап лотка D): компактный карамельный паз в золоте, корзинка слева, без счётчика
 const BAND_PAD = 10, TRAY_GAP = 8, TRAY_H = RT ? 40 : 42, TRAY_S = RT ? 30 : 30, TRAY_STEP = RT ? 36 : 37, TRAY_PAD = RT ? 6 : 8, TRAY_CNT = RT ? 0 : 46, TRAY_ICON = 0;   // 17.11: корзинку убрали (Андрей)   // лоток в панели цели: отступ от карточек, высота, место, шаг, поля, место под счётчик «2/4»
@@ -2466,6 +2437,8 @@ function drawTimer(c, code, t, x, y, s){
   c.fillText(String(t), bx, by + 1); c.restore();
 }
 // Мёд: янтарная лужица с бликом в лунке — плитка на ней останавливается.
+// Лужица мёда вздрагивает, когда на неё села плитка (G.honeyHit): раздаётся и пружинит обратно.
+function honeyK(i, now){ const H = G.honeyHit; if (!H || H.cell !== i || now < H.t0 || now >= H.t1) return 1; const v = (now - H.t0) / (H.t1 - H.t0); return 1 + 0.3 * Math.sin(v * Math.PI * 2.5) * (1 - v); }
 function drawHoney(c, x, y, s){
   if (ROYAL && ART.puddle){ const im = ART.puddle, w = s * 0.9, h = w * im.height / im.width; c.drawImage(im, x + (s - w) / 2, y + s * 0.62 - h / 2, w, h); return; }   // royal: плоская лужица на полу клетки
   if (ART.honey){ const k = s * 0.86; c.drawImage(ART.honey, x + (s - k) / 2, y + (s - k) / 2 + s * 0.02, k, k); return; }
@@ -2621,7 +2594,10 @@ function drawHand(c, x, y, dx, dy, t){
   c.restore();
 }
 // Ход, который рука показывает на уроке: без раздачи — первый ход решения солвера, с раздачей — выбор жадного бота. Тот же расчёт ядра, не догадка.
-function lessonMove(s){ if (!s.every){ const p = solve(s, CFG.PAR_BEAM); return p && p.length ? p[0] : -1; } return greedyPick(s); }
+function lessonMove(s){
+  const H = LEVELS[s.li] && LEVELS[s.li].hand, h = H && H[s.moves];   // урок со своими ходами руки (мёд): шаг s.moves, если он ещё возможен
+  if (h && legalMoves(s).indexOf(h[0] * 4 + h[1]) >= 0) return h[0] * 4 + h[1];
+  if (!s.every){ const p = solve(s, CFG.PAR_BEAM); return p && p.length ? p[0] : -1; } return greedyPick(s); }
 const backOut = (u) => { u = u < 0 ? 0 : u > 1 ? 1 : u; const c1 = 1.70158, t = u - 1; return 1 + (c1 + 1) * t * t * t + c1 * t * t; };
 // Фон: несколько бледных фигур медленно всплывают за полем — поле живёт и в покое. Позиции от сида.
 const FLOATERS = Array.from({ length: 10 }, (_, k) => { const r = mulberry32(500 + k); return { x: r() * 400, y0: r() * 1000, sp: 0.006 + r() * 0.01, col: k % 5, R: 9 + r() * 13, rot: r() * 6.28, vr: (r() - 0.5) * 0.0004 }; });
@@ -2670,7 +2646,7 @@ function drawBurst(c, x, y, R, col, v, power){
   c.restore();
 }
 // Частицы: позиция — от момента рождения (абсолютное время), без накопления dt.
-function partColor(q){ return q.color === -1 ? P.muted : q.color === -2 ? '#ffffff' : q.color === -3 ? P.wood : q.color === -4 ? P.steel : q.color === -5 ? P.woodDark : P.colors[q.color]; }
+function partColor(q){ return typeof q.color === 'string' ? q.color : q.color === -1 ? P.muted : q.color === -2 ? '#ffffff' : q.color === -3 ? P.wood : q.color === -4 ? P.steel : q.color === -5 ? P.woodDark : P.colors[q.color]; }
 function drawParticles(c, now){
   for (const q of G.parts){
     const t = now - q.t0; if (t < 0 || t > q.life) continue;
@@ -2717,7 +2693,7 @@ function plural(n, one, few, many){ const a = n % 10, b = n % 100; return a === 
 function ordersLayout(g, own){
   const s = G.s, V = G.view, ns = [];
   for (let a = 0; a < s.show; a++){ const c = V.cards[a]; ns.push(own && own.slot === a ? own.n : c ? c.c.length : 0); }
-  const nx = s.queue[V.oi], nextW = nx ? nx.length * NEXT_STEP + NEXT_PAD : 0, crateW = s.crateGoal ? CRATE_CARD_W : 0;
+  const nx = s.queue[V.oi], nextW = nx ? nx.length * (ROYAL ? NEXT_R.step : NEXT_STEP) + (ROYAL ? NEXT_R.pad : NEXT_PAD) : 0, crateW = s.crateGoal ? CRATE_CARD_W : 0;
   let total = nextW + crateW, cnt = (nextW ? 1 : 0) + (crateW ? 1 : 0);
   for (const n of ns) if (n){ total += n * CHIP_STEP + CARD_PAD; cnt++; }
   total += ORD_GAP * Math.max(0, cnt - 1);
@@ -2731,7 +2707,7 @@ function ordersLayout(g, own){
     const n = ns[a]; if (!n) continue;
     const w = (n * CHIP_STEP + CARD_PAD) * f; out.cards[a] = { x, y: g.py + BAND_PAD, w, h: ORD_H }; x += w + ORD_GAP * f;
   }
-  if (nextW) out.next = { x, y: g.py + BAND_PAD + (ORD_H - NEXT_H) / 2, w: nextW * f, h: NEXT_H };
+  if (nextW){ const nh = ROYAL ? NEXT_R.h : NEXT_H; out.next = { x, y: g.py + BAND_PAD + (ORD_H - nh) / 2, w: nextW * f, h: nh }; }
   return out;
 }
 function cardRect(a, g, n){ return ordersLayout(g, n ? { slot: a, n } : null).cards[a] || { x: W / 2, y: g.py + BAND_PAD, w: 0, h: ORD_H }; }
@@ -2805,7 +2781,7 @@ function drawOrders(c, g, now, hl){
     const grow = ROYAL && card.from && card.born && now < card.born + R_ORD.grow / ts ? easeIO((now - card.born) / (R_ORD.grow / ts)) : -1;
     if (grow >= 0){                                  // royal: карточка «следующий» вырастает в полную и едет на своё место
       const F = card.from, n = card.c.length, rx = easeX('c' + card.id, r.x, now), x = F.x + (rx - F.x) * grow, y = F.y + (r.y - F.y) * grow, w = F.w + (r.w - F.w) * grow, h = F.h + (r.h - F.h) * grow;
-      const cyy = y + h / 2, cxx = x + w / 2, st2 = NEXT_STEP * F.f + (step - NEXT_STEP * F.f) * grow, rad = 7.5 * F.f + (cr * 0.82 - 7.5 * F.f) * grow;
+      const cyy = y + h / 2, cxx = x + w / 2, st2 = NEXT_R.step * F.f + (step - NEXT_R.step * F.f) * grow, rad = NEXT_R.r * 0.72 * F.f + (cr * 0.82 - NEXT_R.r * 0.72 * F.f) * grow;
       drawCard(c, x, y, w, h, false, 3);
       card.c.forEach((col, i) => { const px = cxx - st2 * (n - 1) / 2 + st2 * i;
         c.save(); c.globalAlpha = grow; c.fillStyle = P.pSlot; c.beginPath(); c.arc(px, cyy, cr * grow, 0, Math.PI * 2); c.fill(); c.restore();
@@ -2856,16 +2832,29 @@ function drawOrders(c, g, now, hl){
   }
   const nx = s.queue[V.oi];
   if (nx && L.next){
-    const r = L.next, x = easeX('n' + V.oi, r.x, now), more = s.queue.length - V.oi - 1, st = NEXT_STEP * L.f, x0 = x + r.w / 2 - st * (nx.length - 1) / 2;
+    const r = L.next, x = easeX('n' + V.oi, r.x, now), more = s.queue.length - V.oi - 1, st = (ROYAL ? NEXT_R.step : NEXT_STEP) * L.f, x0 = x + r.w / 2 - st * (nx.length - 1) / 2;
     const nIn = ROYAL && V.nextT ? Math.min(1, (now - V.nextT) / (R_ORD.shift / ts)) : 1; c.save(); c.globalAlpha = nIn;   // royal: новый «следующий» проявляется, въезжая
-    c.fillStyle = P.pSlot; rr(c, x, r.y, r.w, r.h, 10); c.fill();                    // следующий заказ — утопленная карточка без кромки: «потом», не «сейчас»
-    c.save(); c.globalAlpha = 0.5; c.strokeStyle = P.goalShadow; c.lineWidth = 1.5; rr(c, x + 1, r.y + 1, r.w - 2, r.h - 2, 9); c.stroke(); c.restore();
-    nx.forEach((col, k) => drawShape(c, col, x0 + st * k, r.y + r.h / 2, 7.5 * L.f));
+    if (ROYAL){                                       // холодный карман: тон поля, внутренняя тень сверху, тонкое золото — «потом», но не сливается с кремовой панелью
+      const rad = 11 * L.f, gr = c.createLinearGradient(0, r.y, 0, r.y + r.h); gr.addColorStop(0, '#cfe8fb'); gr.addColorStop(1, '#a8d2f3');
+      c.fillStyle = gr; rr(c, x, r.y, r.w, r.h, rad); c.fill();
+      c.save(); rr(c, x, r.y, r.w, r.h, rad); c.clip(); c.fillStyle = 'rgba(40,90,160,0.18)'; rr(c, x - 2, r.y - 4, r.w + 4, 8, 4); c.fill(); c.restore();
+      c.strokeStyle = '#e2b24a'; c.lineWidth = 1.6; rr(c, x + 0.8, r.y + 0.8, r.w - 1.6, r.h - 1.6, rad - 0.8); c.stroke();
+      nx.forEach((col, k) => drawChip(c, col, x0 + st * k, r.y + r.h / 2, NEXT_R.r * L.f));
+    } else {
+      c.fillStyle = P.pSlot; rr(c, x, r.y, r.w, r.h, 10); c.fill();                    // следующий заказ — утопленная карточка без кромки: «потом», не «сейчас»
+      c.save(); c.globalAlpha = 0.5; c.strokeStyle = P.goalShadow; c.lineWidth = 1.5; rr(c, x + 1, r.y + 1, r.w - 2, r.h - 2, 9); c.stroke(); c.restore();
+      nx.forEach((col, k) => drawShape(c, col, x0 + st * k, r.y + r.h / 2, 7.5 * L.f));
+    }
     if (more > 0){
       const bump = ROYAL && V.nextT && now - V.nextT < 420 ? 1 + 0.45 * Math.sin((now - V.nextT) / 420 * Math.PI) : 1, bx = x + r.w - 2, by = r.y - (bump - 1) * 8;   // royal: «+N» уменьшилось — подскок
       c.save(); c.translate(bx, by); c.scale(bump, bump);
-      c.fillStyle = P.accent; c.beginPath(); c.arc(0, 0, 10, 0, Math.PI * 2); c.fill();
-      c.fillStyle = '#fff'; c.font = '800 11px Nunito, system-ui, sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('+' + more, 0, 0.5); c.textBaseline = 'alphabetic';
+      if (ROYAL){                                     // золотая монетка с тёмной цифрой
+        const gg = c.createLinearGradient(0, -11, 0, 11); gg.addColorStop(0, '#ffe58a'); gg.addColorStop(1, '#f0a418');
+        c.fillStyle = 'rgba(120,70,10,0.35)'; c.beginPath(); c.arc(0, 1.5, 11, 0, Math.PI * 2); c.fill();
+        c.fillStyle = gg; c.beginPath(); c.arc(0, 0, 11, 0, Math.PI * 2); c.fill(); c.strokeStyle = '#b8760e'; c.lineWidth = 1.4; c.stroke();
+        c.fillStyle = '#5a3206'; c.font = '900 11px Nunito, system-ui, sans-serif';
+      } else { c.fillStyle = P.accent; c.beginPath(); c.arc(0, 0, 10, 0, Math.PI * 2); c.fill(); c.fillStyle = '#fff'; c.font = '800 11px Nunito, system-ui, sans-serif'; }
+      c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('+' + more, 0, 0.5); c.textBaseline = 'alphabetic';
       c.restore();
     }
     c.restore();
@@ -2947,7 +2936,7 @@ function drawTray(c, g, now, kind){
 // Пока фокус открыт — игра на паузе (setPaused 'tut'), ввод вне пятна заблокирован; тап в любое место или TUT_MS — следующий шаг.
 // На шаге «пара» касание в пятне сразу отдаёт свайп полю. Каждый шаг — один раз (G.save.tut; сброс прогресса в DEV его обнуляет).
 const TUT_ON = ROYAL, TUT_MS = 1800, TUT_DIM = 0.65;
-const TUT_DUR = { untray: 900 };   // 17.11 (Андрей): фокус «лоток отдал фигуру в заказ» на 3-м — вдвое короче, и праздник после него тоже (G.winHoldK)
+const TUT_DUR = { untray: 900, honey: 2600 };   // 18.11: урок мёда — пятно со свайпом держится дольше (рука успевает показать ход дважды)   // 17.11 (Андрей): фокус «лоток отдал фигуру в заказ» на 3-м — вдвое короче, и праздник после него тоже (G.winHoldK)
 const TUT_START = { 0: ['goal', 'pair'], 1: ['ghost'], 4: ['boosts'], 8: ['vert'], 13: ['honey'], 18: ['rainbow'], 23: ['crates'], 28: ['chain'], 33: ['timer'] };   // 17.11: уроки 1–3 — один блок, номера −2   // по индексу уровня
 const TUT = { q: [], cur: null, t0: 0, cv: null, slot: -1, due: [] };
 // Событийный шаг — по времени, а не через очередь вида: новый ход догоняет вид (snapView) и стёр бы его.
@@ -2961,7 +2950,7 @@ function tutCanvas(){
     if (!TUT.cur) return; e.preventDefault();
     const fr = $('frame').getBoundingClientRect(), x = e.clientX - fr.left, y = e.clientY - fr.top, h = TUT.hole, inside = h && x >= h.x && x <= h.x + h.w && y >= h.y && y <= h.y + h.h;
     const id = TUT.cur; tutNext('tap');
-    if (inside && id === 'pair' && !TUT.cur){ try { cv.dispatchEvent(new PointerEvent('pointerdown', { clientX: e.clientX, clientY: e.clientY, pointerId: e.pointerId, pointerType: e.pointerType, isPrimary: true, bubbles: true })); } catch (err) {} }   // свайп по паре — сразу полю
+    if (inside && (id === 'pair' || id === 'honey') && !TUT.cur){ try { cv.dispatchEvent(new PointerEvent('pointerdown', { clientX: e.clientX, clientY: e.clientY, pointerId: e.pointerId, pointerType: e.pointerType, isPrimary: true, bubbles: true })); } catch (err) {} }   // свайп по паре — сразу полю
   });
   return TUT.cv = c;
 }
@@ -2978,7 +2967,10 @@ function tutRect(id){
   if (id === 'untray'){ const r = TUT.slot >= 0 ? ordersLayout(g).cards[TUT.slot] : null; return r || null; }
   if (id === 'crates') return ordersLayout(g).crate;
   if (id === 'vert') return firstCell(i => s.grid[i] > 0 && isVert(s.grid[i]));
-  if (id === 'honey') return firstCell(i => s.floor[i] === HONEY);
+  if (id === 'honey'){                              // урок мёда (18.11): шаг 1 — пятно на пути плитки до мёда, рука показывает свайп
+    const m = lessonMove(s), pk = m >= 0 ? peekMove(s, m) : null;
+    if (pk && s.floor[pk.to] === HONEY) return union([cellR(m >> 2), cellR(pk.to)]);
+    return firstCell(i => s.floor[i] === HONEY); }
   if (id === 'rainbow') return firstCell(i => s.grid[i] > 0 && colorOf(s.grid[i]) === RAINBOW);
   if (id === 'chain') return firstCell(i => s.grid[i] > 0 && isChained(s.grid[i]));
   if (id === 'timer') return firstCell(i => s.grid[i] > 0 && timerOf(s.grid[i]) > 0);
@@ -3028,7 +3020,8 @@ function drawSpot(){
   const x = h.x - br, y = h.y - br, w = h.w + br * 2, hh = h.h + br * 2, rad = Math.min(26, Math.min(w, hh) / 2);
   c.save(); c.globalCompositeOperation = 'destination-out'; c.shadowColor = '#000'; c.shadowBlur = 16; c.fillStyle = '#000'; rr(c, x, y, w, hh, rad); c.fill(); c.restore();   // мягкое пятно
   c.save(); c.globalAlpha = 0.85 * inA; c.strokeStyle = '#fff6d8'; c.lineWidth = 2.5; rr(c, x - 2, y - 2, w + 4, hh + 4, rad + 2); c.stroke(); c.restore();   // тонкий светлый ободок
-  if (TUT.cur === 'pair'){                         // рука показывает свайп по паре (как на уроке)
+  const swipe = TUT.cur === 'pair' || (TUT.cur === 'honey' && LEVELS[G.s.li] && LEVELS[G.s.li].lesson);
+  if (swipe){                                       // рука показывает свайп по паре (как на уроке); на уроке мёда — свайп до мёда
     const m = lessonMove(G.s); if (m >= 0){ const g = geo(), a = cellXY(m >> 2, g), b = cellXY(peekMove(G.s, m).to, g), cr = cv.getBoundingClientRect();
       const ax = cr.left - fr.left + (a.x + g.cell * 0.5) * scale, ay = cr.top - fr.top + (a.y + g.cell * 0.55) * scale; drawHand(c, ax, ay, (b.x - a.x) * scale, (b.y - a.y) * scale, t); }
   } else {                                          // рука-палец указывает на пятно снизу (над экраном — сверху)
@@ -3091,7 +3084,7 @@ function render(){
       ctx.lineWidth = 4; rr(ctx, g.ox - 8, g.oy - 8, g.bw + 16, g.bh + 16, 18); ctx.stroke(); ctx.restore();
     }
   }
-  for (let i = 0; i < s.grid.length; i++){ const p = cellXY(i, g); if (!base){ ctx.fillStyle = P.slot; rr(ctx, p.x + cs * 0.05, p.y + cs * 0.05, cs * 0.9, cs * 0.9, cs * 0.18); ctx.fill(); } if (s.floor[i] === HONEY) drawHoney(ctx, p.x - (s.grid[i] > 0 ? cs * 0.06 : 0), p.y - (s.grid[i] > 0 ? cs * 0.04 : 0), cs * (s.grid[i] > 0 ? 1.12 : 1)); }
+  for (let i = 0; i < s.grid.length; i++){ const p = cellXY(i, g); if (!base){ ctx.fillStyle = P.slot; rr(ctx, p.x + cs * 0.05, p.y + cs * 0.05, cs * 0.9, cs * 0.9, cs * 0.18); ctx.fill(); } if (s.floor[i] === HONEY){ const sz = cs * (s.grid[i] > 0 ? 1.12 : 1) * honeyK(i, now), cy = p.y + cs * (s.grid[i] > 0 ? 0.52 : 0.5); drawHoney(ctx, p.x + cs / 2 - sz / 2, cy - sz / 2, sz); } }
   // искра следующей раздачи
   if (s.every > 0 && s.next && s.next.cell >= 0 && !isWin(s) && !G.drops.some(D => now < D.t1)){ const p = ghostXY(s, g, now); if (!(ROYAL && CLAW_ON && ART.clawClosed)) drawSpark(ctx, p.x, p.y, cs, s.next.code, now); }
   // превью свайпа: честный расчёт ядра — куда доедет и будет ли щёлк
@@ -3164,7 +3157,7 @@ function render(){
       scl = 0.35 + 0.65 * backOut(v);
     }
     if (G.land && G.land.cell === i && now >= G.land.t0 && now < G.land.t1){  // остановка: сплющивание вдоль хода
-      const v = (now - G.land.t0) / (G.land.t1 - G.land.t0), q = Math.sin(v * Math.PI) * (1 - v * 0.5) * 0.2;
+      const v = (now - G.land.t0) / (G.land.t1 - G.land.t0), q = G.land.honey ? Math.sin(v * Math.PI * 2) * (1 - v) * 0.3 : Math.sin(v * Math.PI) * (1 - v * 0.5) * 0.2;   // мёд: вязнет и качается туда-обратно
       if (G.land.dir < 2){ sx = 1 - q; sy = 1 + q * 0.7; } else { sy = 1 - q; sx = 1 + q * 0.7; }
       x += DIRS[G.land.dir][0] * q * cs * 0.25; y += DIRS[G.land.dir][1] * q * cs * 0.25;
     }
@@ -3197,7 +3190,8 @@ function render(){
   // плитка стоит на мёде — мёд выглядывает из-под неё и подтекает на нижний край: видно, почему она тут остановилась
   for (let i = 0; i < s.grid.length; i++){
     if (s.floor[i] !== HONEY || s.grid[i] <= 0 || skip.has(i)) continue;
-    const p = cellXY(i, g); ctx.save(); rr(ctx, p.x, p.y + cs * 0.8, cs, cs * 0.2, 0); ctx.clip(); drawHoney(ctx, p.x + cs * 0.1, p.y + cs * 0.3, cs * 0.8); ctx.restore();
+    const p = cellXY(i, g), hk = honeyK(i, now), hs = cs * 0.8 * (1 + (hk - 1) * 1.6), lip = cs * (0.2 + Math.max(0, hk - 1) * 0.5);   // «чавк»: мёд выдавливается из-под плитки шире и ниже
+    ctx.save(); rr(ctx, p.x - cs * 0.2, p.y + cs - lip, cs * 1.4, lip + cs * 0.1, 0); ctx.clip(); drawHoney(ctx, p.x + cs / 2 - hs / 2, p.y + cs * 0.3 + (cs * 0.8 - hs) * 0.2, hs); ctx.restore();
   }
   if (ROYAL && CLAW_ON && ART.clawClosed && s.every > 0 && s.next && s.next.cell >= 0 && !isWin(s) && !G.drops.some(D => now < D.t1)) drawClawIdle(ctx, g, s, now);   // royal: захват — поверх плиток (тросик над клеткой)
   if (G.kbd && s.grid[G.cursor] <= 0){ const p = cellXY(G.cursor, g); ctx.strokeStyle = P.accent; ctx.lineWidth = 2; rr(ctx, p.x + 4, p.y + 4, cs - 8, cs - 8, cs * 0.2); ctx.stroke(); }
